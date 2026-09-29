@@ -1,0 +1,16 @@
+{
+  "name": "ventanilla-unica-calidad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pruebas automatizadas del portal de permisos municipales, reportadas a Qase.",
+  "scripts": {
+    "test": "playwright test",
+    "test:qase": "QASE_MODE=testops playwright test",
+    "test:ui": "playwright test --ui",
+    "reporte": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1",
+    "playwright-qase-reporter": "2.1.2"
+  }
+}

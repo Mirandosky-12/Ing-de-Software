@@ -1,0 +1,221 @@
+# Ventanilla Única Municipal — Caso 3: Permisos Municipales
+
+Portal en línea para solicitar permisos ante la Dirección de Permisos y Cumplimiento
+del Municipio de Panamá. Sustituye los formularios físicos por un flujo digital con
+trazabilidad y auditoría.
+
+| | |
+|---|---|
+| **Institución** | Municipio de Panamá |
+| **Personas afectadas** | +20,000 ciudadanos y empresas al año |
+| **Problema** | Formularios físicos, trazabilidad limitada |
+| **Tiempo actual** | 2 – 6 meses |
+| **Meta** | 15 días hábiles, con flujos de aprobación y auditoría |
+| **Catálogo** | 35 trámites reales tomados de [permisosycumplimiento.mupa.gob.pa](https://permisosycumplimiento.mupa.gob.pa/tramites-y-permisos/) |
+
+**Herramientas asignadas al grupo:** Qase (calidad) · ClamAV (seguridad) · Grafana (CI/CD y observabilidad) · JavaScript + Python (lenguajes).
+
+---
+
+## Estructura
+
+```
+portal-permisos/
+├── index.html                    Portal completo (frontend, sin dependencias)
+├── backend/
+│   ├── main.py                   API FastAPI
+│   ├── antivirus.py              Integración con ClamAV
+│   ├── metricas.py               Series de tiempo para Prometheus → Grafana
+│   ├── test_api.py               Pruebas de la API, reportadas a Qase
+│   └── requirements.txt
+├── calidad/
+│   ├── casos-qase.md             27 casos de prueba para cargar en Qase
+│   ├── playwright.config.js      Reportero de Qase configurado
+│   ├── tests/portal.spec.js      18 pruebas automatizadas del portal
+│   └── package.json
+├── monitoreo/
+│   ├── docker-compose.yml        ClamAV + Prometheus + Grafana
+│   ├── prometheus.yml            Recolección de métricas
+│   ├── alertas.yml               5 alertas (antivirus caído, amenazas, plazos…)
+│   ├── grafana-dashboard.json    Tablero de 11 paneles
+│   ├── grafana-datasource.yml
+│   └── grafana-provider.yml
+└── .github/workflows/calidad.yml CI: pruebas en cada push, resultados a Qase
+```
+
+---
+
+## Cómo levantarlo
+
+### 1. El portal (sólo el frontend)
+
+`index.html` no necesita compilación ni servidor. Ábrelo en el navegador, o:
+
+```bash
+npx serve -l 5173 .
+```
+
+Cuenta de prueba: **demo@mupa.gob.pa** / **demo1234**
+
+Funciona completo sin backend: el catálogo, las validaciones, la verificación
+de formato y el cálculo real de la huella SHA-256 corren en el navegador. La
+única parte simulada es la respuesta de ClamAV (para probarla, sube un archivo
+cuyo nombre contenga `eicar` y verás el rechazo).
+
+### 2. La infraestructura
+
+```bash
+cd monitoreo
+docker compose up -d
+```
+
+| Servicio | Dirección | Credenciales |
+|---|---|---|
+| ClamAV | `localhost:3310` | — |
+| Prometheus | http://localhost:9090 | — |
+| Grafana | http://localhost:3001 | admin / admin |
+
+La primera vez ClamAV tarda unos 2 minutos en bajar su base de firmas:
+`docker compose logs -f clamav` hasta ver `Self checking every 600 seconds`.
+
+### 3. La API
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+Documentación interactiva en http://localhost:8000/docs
+Salud del servicio en http://localhost:8000/salud
+
+### 4. Las pruebas
+
+```bash
+cd calidad
+npm install
+npx playwright install chromium
+npm test                    # local
+npm run test:qase           # sube resultados a Qase
+```
+
+```bash
+cd backend
+pytest -v                   # local
+pytest --qase-mode=testops  # sube resultados a Qase
+```
+
+---
+
+## Cómo se conectan las cuatro herramientas
+
+```
+        Navegador (JavaScript)
+        index.html · validación, SHA-256, interfaz
+                    │
+                    │ HTTPS
+                    ▼
+        API (Python · FastAPI)
+        ├──► ClamAV  ── escanea cada PDF antes de guardarlo
+        ├──► SHA-256 ── huella de integridad del documento
+        └──► /metrics ── expone las series de tiempo
+                    │
+                    ▼
+        Prometheus  ── raspa /metrics cada 15 s
+                    │
+                    ▼
+        Grafana     ── 11 paneles + 5 alertas
+
+        Qase  ◄──  Playwright (portal) y pytest (API), en cada push
+```
+
+### ClamAV — seguridad documental
+
+`backend/antivirus.py` habla con el demonio `clamd` por socket TCP usando el
+comando **INSTREAM**: el PDF viaja en memoria, se escanea, y **sólo si sale
+limpio se guarda**. Un archivo nunca toca el disco sin haber sido revisado.
+
+La cadena de verificación tiene cinco pasos, del más barato al más caro:
+
+| # | Verificación | Qué detiene |
+|---|---|---|
+| 1 | Extensión `.pdf` **y** bytes mágicos `%PDF-` | Un `.exe` renombrado a `.pdf`. El MIME que manda el navegador es falsificable; los bytes no. |
+| 2 | Tamaño ≤ 10 MB | Cargas que saturarían el almacenamiento |
+| 3 | ClamAV INSTREAM | Malware incrustado en el PDF |
+| 4 | SHA-256 del contenido | Identifica al documento de forma única |
+| 5 | Sellado en bitácora | Deja constancia con fecha y hora |
+
+**Decisión importante:** si ClamAV no responde, la API devuelve **503** y no
+acepta el documento. Un expediente sin escanear es peor que un trámite lento.
+
+### Grafana — observabilidad
+
+Grafana no lee la aplicación: **Prometheus** raspa `/metrics` cada 15 segundos
+y guarda las series; Grafana las consulta. `backend/metricas.py` define qué se
+mide:
+
+| Métrica | Para qué sirve |
+|---|---|
+| `mupa_solicitudes_creadas_total` | Demanda por permiso y corregimiento |
+| `mupa_tramite_dias` | Días reales hasta la resolución, contra la meta de 15 |
+| `mupa_documentos_verificados_total` | Cuántos PDF se rechazan y por qué |
+| `mupa_amenazas_detectadas_total` | Amenazas bloqueadas, por firma |
+| `mupa_antivirus_arriba` | 1 / 0 según responda `clamd` |
+| `mupa_http_segundos` | Latencia de la API |
+
+Todas llevan la etiqueta `municipio`, y el tablero tiene un selector para
+filtrar por ella: es lo que permite que San Miguelito y La Chorrera se sumen
+sin tocar el tablero.
+
+Las alertas de `alertas.yml` cubren antivirus caído, amenaza detectada, más de
+30 % de rechazos, API lenta y trámites que se salen del plazo.
+
+### Qase — gestión de la calidad
+
+`calidad/casos-qase.md` tiene los 27 casos de prueba listos para cargar. Cada
+prueba automatizada lleva `qase.id(N)`, que la amarra a su caso; cuando corre
+en CI, Qase recibe el resultado, la captura de pantalla del fallo y el video.
+
+La suite más importante es **Seguridad documental** (VUM-20 a VUM-25): si
+alguna de esas falla, el despliegue no sale.
+
+### JavaScript y Python
+
+- **JavaScript** — el portal completo, sin framework ni build. Un solo archivo
+  que cualquiera del grupo puede abrir, leer y modificar. Usa `crypto.subtle`
+  del navegador para calcular el SHA-256 de verdad, y `FileReader` para leer
+  los bytes mágicos del PDF antes de enviarlo.
+- **Python** — la API, la integración con ClamAV, la instrumentación y las
+  pruebas del backend.
+
+---
+
+## Variables de entorno
+
+```bash
+# backend
+CLAMAV_HOST=127.0.0.1
+CLAMAV_PORT=3310
+CLAMAV_TIMEOUT=30
+MUNICIPIO=panama                  # etiqueta que separa los datos de cada municipio
+CORS_ORIGENES=http://localhost:5173
+
+# pruebas
+QASE_MODE=testops
+QASE_TESTOPS_API_TOKEN=...        # Qase → Perfil → API tokens
+QASE_PROJECT=VUM
+```
+
+En GitHub, `QASE_TOKEN` va en *Settings → Secrets and variables → Actions*.
+
+---
+
+## Marco legal aplicable
+
+| Norma | Qué exige al sistema |
+|---|---|
+| **Ley 106 de 1973** — Régimen Municipal | Competencia del municipio para otorgar permisos |
+| **Ley 51 de 2008** — Documentos y firma electrónica | Validez legal del expediente digital; el sellado con hash es lo que la sustenta |
+| **Ley 81 de 2019** — Protección de datos personales | Consentimiento en el registro, minimización de datos, derecho de acceso |
+| **Ley 83 de 2019** — Servicios digitales del Estado | Interoperabilidad y trámite en línea |
+| **Acuerdo Municipal N.° 130 de 2016** | Declaración jurada del solicitante |

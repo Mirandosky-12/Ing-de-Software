@@ -1,0 +1,249 @@
+{
+  "uid": "mupa-ventanilla",
+  "title": "Ventanilla Única Municipal",
+  "description": "Salud del servicio, seguridad documental y desempeño de los trámites. Filtrable por municipio.",
+  "tags": ["municipio", "permisos", "clamav"],
+  "timezone": "America/Panama",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "municipio",
+        "label": "Municipio",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+        "query": "label_values(mupa_documentos_verificados_total, municipio)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Estado del servicio",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Antivirus documental",
+      "description": "1 = clamd responde PONG. Si cae, la API rechaza toda carga de documentos.",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 5, "w": 5, "x": 0, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "min(mupa_antivirus_arriba{municipio=~\"$municipio\"})", "instant": true }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "En línea", "color": "green", "index": 0 } } },
+            { "type": "value", "options": { "0": { "text": "CAÍDO", "color": "red", "index": 1 } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Solicitudes (7 días)",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 5, "w": 5, "x": 5, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(mupa_solicitudes_creadas_total{municipio=~\"$municipio\"}[7d]))", "instant": true }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "value" },
+      "fieldConfig": { "defaults": { "decimals": 0, "unit": "short",
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Amenazas bloqueadas (7 días)",
+      "description": "Documentos que ClamAV puso en cuarentena antes de entrar al expediente.",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 5, "w": 5, "x": 10, "y": 1 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(mupa_amenazas_detectadas_total{municipio=~\"$municipio\"}[7d])) or vector(0)", "instant": true }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value" },
+      "fieldConfig": { "defaults": { "decimals": 0,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 } ] } },
+        "overrides": [] }
+    },
+    {
+      "id": 4,
+      "type": "gauge",
+      "title": "Documentos aceptados",
+      "description": "Proporción de cargas que superan la cadena de verificación completa.",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 5, "w": 4, "x": 15, "y": 1 },
+      "targets": [
+        { "refId": "A", "instant": true,
+          "expr": "100 * sum(mupa_documentos_verificados_total{resultado=\"limpio\",municipio=~\"$municipio\"}) / clamp_min(sum(mupa_documentos_verificados_total{municipio=~\"$municipio\"}), 1)" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "decimals": 1,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "red", "value": null }, { "color": "orange", "value": 70 }, { "color": "green", "value": 90 } ] } },
+        "overrides": [] }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Latencia p95 de la API",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 5, "w": 5, "x": 19, "y": 1 },
+      "targets": [
+        { "refId": "A", "instant": true,
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(mupa_http_segundos_bucket[5m])))" }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "value" },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 2,
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 2 } ] } },
+        "overrides": [] }
+    },
+
+    {
+      "type": "row",
+      "title": "Seguridad documental",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "collapsed": false
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Resultado de la verificación de documentos",
+      "description": "Por qué se rechaza un PDF. Un pico en 'formato_invalido' suele significar que el portal no explica bien el requisito.",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 7 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{resultado}}",
+          "expr": "sum by (resultado) (rate(mupa_documentos_verificados_total{municipio=~\"$municipio\"}[10m]) * 600)" }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] },
+                   "tooltip": { "mode": "multi", "sort": "desc" } },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": {
+        "drawStyle": "bars", "stacking": { "mode": "normal" }, "fillOpacity": 70, "lineWidth": 0 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "limpio" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
+          { "matcher": { "id": "byName", "options": "infectado" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
+        ] }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Tiempo de escaneo antivirus",
+      "description": "Percentiles del análisis de ClamAV. Si el p95 sube, la cola de trámites se alarga.",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 7 },
+      "targets": [
+        { "refId": "A", "legendFormat": "p50",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(mupa_escaneo_segundos_bucket[5m])))" },
+        { "refId": "B", "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(mupa_escaneo_segundos_bucket[5m])))" },
+        { "refId": "C", "legendFormat": "p99",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(mupa_escaneo_segundos_bucket[5m])))" }
+      ],
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 2,
+        "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" } },
+        "overrides": [] }
+    },
+
+    {
+      "type": "row",
+      "title": "Desempeño de los trámites",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "collapsed": false
+    },
+    {
+      "id": 8,
+      "type": "barchart",
+      "title": "Expedientes abiertos por estado",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "targets": [
+        { "refId": "A", "instant": true, "format": "table", "legendFormat": "{{estado}}",
+          "expr": "sum by (estado) (mupa_solicitudes_por_estado{municipio=~\"$municipio\"})" }
+      ],
+      "options": { "orientation": "horizontal", "legend": { "showLegend": false },
+                   "xTickLabelRotation": 0, "showValue": "always" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0,
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "blue", "value": null } ] } }, "overrides": [] }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Solicitudes por tipo de permiso",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 16 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{permiso}}",
+          "expr": "sum by (permiso) (increase(mupa_solicitudes_creadas_total{municipio=~\"$municipio\"}[1d]))" }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] },
+                   "tooltip": { "mode": "multi", "sort": "desc" } },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0,
+        "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" }, "fillOpacity": 75, "lineWidth": 0 } },
+        "overrides": [] }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Días hábiles hasta la resolución (p50 / p90) frente a la meta de 15 días",
+      "description": "El objetivo del proyecto: bajar de 2–6 meses a 15 días hábiles. La línea roja es la meta.",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 24 },
+      "targets": [
+        { "refId": "A", "legendFormat": "p50",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(mupa_tramite_dias_bucket{municipio=~\"$municipio\"}[7d])))" },
+        { "refId": "B", "legendFormat": "p90",
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(mupa_tramite_dias_bucket{municipio=~\"$municipio\"}[7d])))" }
+      ],
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "d", "decimals": 1, "min": 0,
+        "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never",
+          "thresholdsStyle": { "mode": "line" } },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "color": "green", "value": null }, { "color": "red", "value": 15 } ] } },
+        "overrides": [] }
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Solicitudes por corregimiento",
+      "datasource": { "type": "prometheus", "uid": "prometheus-mupa" },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 24 },
+      "targets": [
+        { "refId": "A", "instant": true, "format": "table",
+          "expr": "sort_desc(sum by (corregimiento, municipio) (mupa_solicitudes_creadas_total{municipio=~\"$municipio\"}))" }
+      ],
+      "transformations": [
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true },
+          "renameByName": { "corregimiento": "Corregimiento", "municipio": "Municipio", "Value": "Solicitudes" } } },
+        { "id": "sortBy", "options": { "sort": [ { "field": "Solicitudes", "desc": true } ] } }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Solicitudes" },
+            "properties": [ { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } },
+                            { "id": "decimals", "value": 0 } ] }
+        ] }
+    }
+  ]
+}

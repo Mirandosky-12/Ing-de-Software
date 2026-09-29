@@ -1,0 +1,1606 @@
+<title>Ventanilla Única Municipal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+/* Layout: barra lateral fija con la navegación en escritorio, que colapsa a una
+   cinta de pestañas superior en móvil; las pantallas de acceso van centradas a una columna. */
+:root{
+  --bg:#f3f6f9;
+  --surface:#ffffff;
+  --surface-2:#e9eef4;
+  --ink:#15212c;
+  --ink-2:#556676;
+  --line:#d6dee7;
+  --brand:#0b4f8a;
+  --brand-2:#0a3f6f;
+  --brand-soft:#e2edf8;
+  --on-brand:#ffffff;
+  --accent:#b8701c;
+  --ok:#186b45;
+  --ok-soft:#dff0e7;
+  --warn:#8f5a00;
+  --warn-soft:#fbeed4;
+  --crit:#a52218;
+  --crit-soft:#fbe3e1;
+  --shadow:0 1px 2px rgba(21,33,44,.06), 0 8px 24px -16px rgba(21,33,44,.28);
+
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c141b;
+    --surface:#131f28;
+    --surface-2:#1a2833;
+    --ink:#e7eef4;
+    --ink-2:#95a7b6;
+    --line:#26363f;
+    --brand:#4fa1e0;
+    --brand-2:#79bcf0;
+    --brand-soft:#14293b;
+    --on-brand:#08131c;
+    --accent:#dd9a45;
+    --ok:#52c48d;
+    --ok-soft:#12302a;
+    --warn:#dfb055;
+    --warn-soft:#2e2712;
+    --crit:#f0796c;
+    --crit-soft:#331a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c141b;
+  --surface:#131f28;
+  --surface-2:#1a2833;
+  --ink:#e7eef4;
+  --ink-2:#95a7b6;
+  --line:#26363f;
+  --brand:#4fa1e0;
+  --brand-2:#79bcf0;
+  --brand-soft:#14293b;
+  --on-brand:#08131c;
+  --accent:#dd9a45;
+  --ok:#52c48d;
+  --ok-soft:#12302a;
+  --warn:#dfb055;
+  --warn-soft:#2e2712;
+  --crit:#f0796c;
+  --crit-soft:#331a1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:1.65rem;font-weight:700;letter-spacing:-.015em}
+h2{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
+h3{font-size:1rem;font-weight:600}
+p{margin:0}
+a{color:var(--brand)}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-family:var(--display);font-size:.7rem;font-weight:600;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2);
+}
+.muted{color:var(--ink-2)}
+.small{font-size:.83rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- controles ---------- */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field > label{font-size:.82rem;font-weight:600;color:var(--ink)}
+.field .hint{font-size:.76rem;color:var(--ink-2)}
+.req{color:var(--crit);font-weight:700}
+input[type=text],input[type=email],input[type=password],input[type=number],
+input[type=date],input[type=time],input[type=tel],select,textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:.92rem;
+}
+textarea{resize:vertical;min-height:88px}
+input:invalid:not(:placeholder-shown){border-color:var(--crit)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 18px;border-radius:7px;border:1px solid transparent;
+  background:var(--brand);color:var(--on-brand);font-weight:600;font-size:.9rem;cursor:pointer;
+  transition:filter .15s ease, background .15s ease;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;color:var(--brand);border-color:var(--line)}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px}
+.btn.plain:hover{color:var(--ink);background:var(--surface-2)}
+.btn.wide{width:100%}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row > *{flex:1 1 220px;min-width:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:20px;box-shadow:var(--shadow);
+}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+  font-size:.74rem;font-weight:600;letter-spacing:.02em;white-space:nowrap;
+}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.info{background:var(--brand-soft);color:var(--brand)}
+
+/* ---------- pantallas de acceso ---------- */
+.auth{min-height:100%;display:grid;grid-template-columns:1fr;align-items:start}
+.auth-wrap{width:100%;max-width:1040px;margin:0 auto;padding-block:32px 48px;
+  display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+@media (max-width:860px){.auth-wrap{grid-template-columns:1fr;gap:28px;padding-block:24px 36px}}
+.seal{
+  width:52px;height:52px;border-radius:50%;flex:none;
+  border:2px solid var(--brand);display:grid;place-items:center;
+  font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--brand);
+  letter-spacing:.02em;background:var(--brand-soft);
+}
+.brandline{display:flex;gap:14px;align-items:center;margin-bottom:22px}
+.brandline .t1{font-family:var(--display);font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
+.brandline .t2{font-size:.78rem;color:var(--ink-2)}
+.hero-h{font-size:clamp(1.9rem,4.4vw,2.7rem);font-weight:700;letter-spacing:-.025em;margin-bottom:12px}
+.hero-h em{font-style:normal;color:var(--brand)}
+.hero-p{color:var(--ink-2);max-width:46ch;margin-bottom:24px}
+.facts{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.facts div{background:var(--bg);padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.facts dt{font-size:.82rem;color:var(--ink-2)}
+.facts dd{margin:0;font-family:var(--mono);font-size:.86rem;font-weight:500;text-align:right}
+
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:9px;margin-bottom:20px}
+.tabs button{
+  flex:1;padding:8px;border:0;border-radius:6px;background:transparent;
+  color:var(--ink-2);font-weight:600;font-size:.87rem;cursor:pointer;
+}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+.demo-note{
+  margin-top:14px;padding:10px 12px;border-radius:8px;border:1px dashed var(--line);
+  background:var(--surface-2);font-size:.79rem;color:var(--ink-2);
+}
+.demo-note b{color:var(--ink);font-family:var(--mono);font-weight:500}
+
+/* ---------- shell de la aplicación ---------- */
+.shell{display:grid;grid-template-columns:238px 1fr;min-height:100%}
+@media (max-width:900px){.shell{grid-template-columns:1fr}}
+.side{
+  border-right:1px solid var(--line);background:var(--surface);
+  padding:22px 16px;display:flex;flex-direction:column;gap:22px;
+  position:sticky;top:env(safe-area-inset-top,0px);height:100%;
+}
+@media (max-width:900px){
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);
+    padding:14px 16px;gap:14px}
+}
+.side .who{display:flex;gap:10px;align-items:center;min-width:0}
+.avatar{
+  width:36px;height:36px;border-radius:9px;flex:none;display:grid;place-items:center;
+  background:var(--brand);color:var(--on-brand);font-family:var(--display);font-weight:700;font-size:.85rem;
+}
+.who .n{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .o{font-size:.74rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav.menu{display:flex;flex-direction:column;gap:2px}
+@media (max-width:900px){
+  nav.menu{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none}
+  nav.menu::-webkit-scrollbar{display:none}
+}
+nav.menu button{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:9px 11px;border:0;border-radius:8px;background:transparent;
+  color:var(--ink-2);font-weight:500;font-size:.89rem;cursor:pointer;white-space:nowrap;
+}
+nav.menu button:hover{background:var(--surface-2);color:var(--ink)}
+nav.menu button[aria-current="page"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
+nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.side .foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+@media (max-width:900px){.side .foot{display:none}}
+.opsbar{font-size:.7rem;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;
+  padding-top:12px;border-top:1px solid var(--line)}
+.opsbar span{display:flex;align-items:center;gap:6px}
+.dot-ok{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+
+.main{padding:28px 24px 64px;min-width:0}
+@media (max-width:640px){.main{padding:20px 16px 56px}}
+.main-in{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.page-head p{color:var(--ink-2);max-width:58ch;margin-top:4px;font-size:.92rem}
+
+/* ---------- tarjetas de indicadores ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 15px;
+  display:flex;flex-direction:column;gap:2px}
+.stat .v{font-family:var(--display);font-size:1.75rem;font-weight:700;line-height:1;
+  font-variant-numeric:tabular-nums}
+.stat .k{font-size:.76rem;color:var(--ink-2)}
+.stat.s-ok .v{color:var(--ok)} .stat.s-warn .v{color:var(--warn)} .stat.s-crit .v{color:var(--crit)}
+
+/* ---------- lista de expedientes ---------- */
+.exp-list{display:flex;flex-direction:column;gap:10px}
+.exp{
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);
+  border-radius:10px;padding:14px 16px;display:grid;
+  grid-template-columns:1fr auto;gap:8px 16px;align-items:start;
+}
+.exp.st-ok{border-left-color:var(--ok)} .exp.st-warn{border-left-color:var(--warn)}
+.exp.st-crit{border-left-color:var(--crit)} .exp.st-info{border-left-color:var(--brand)}
+.exp .code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);letter-spacing:.01em}
+.exp .name{font-weight:600;font-size:.94rem;margin-top:1px}
+.exp .meta{font-size:.79rem;color:var(--ink-2);margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
+.exp .meta i{font-style:normal}
+.exp .meta i::after{content:"·";margin-left:6px;color:var(--line)}
+.exp .meta i:last-child::after{content:""}
+
+/* ---------- asistente de solicitud ---------- */
+.stepper{display:flex;gap:0;margin-bottom:4px;overflow-x:auto;scrollbar-width:none}
+.stepper::-webkit-scrollbar{display:none}
+.stepper .s{display:flex;align-items:center;gap:8px;padding-right:14px;white-space:nowrap}
+.stepper .s + .s{padding-left:14px;border-left:1px solid var(--line)}
+.stepper .num{
+  width:23px;height:23px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-family:var(--mono);font-size:.74rem;font-weight:500;
+  border:1px solid var(--line);color:var(--ink-2);background:var(--surface);
+}
+.stepper .s[data-state="on"] .num{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.stepper .s[data-state="done"] .num{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.stepper .lbl{font-size:.8rem;color:var(--ink-2);font-weight:500}
+.stepper .s[data-state="on"] .lbl{color:var(--ink);font-weight:600}
+
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.cat{
+  text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:10px;
+  background:var(--surface);cursor:pointer;color:var(--ink);
+  display:flex;flex-direction:column;gap:3px;
+}
+.cat:hover{border-color:var(--brand);background:var(--brand-soft)}
+.cat[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.cat .cn{font-weight:600;font-size:.9rem}
+.cat .cc{font-size:.76rem;color:var(--ink-2)}
+
+.opt-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;
+  padding-right:4px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface)}
+.opt{
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+  padding:10px 11px;border-radius:8px;border:1px solid transparent;cursor:pointer;background:transparent;
+  text-align:left;color:var(--ink);
+}
+.opt:hover{background:var(--surface-2)}
+.opt[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand)}
+.opt .radio{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex:none}
+.opt[aria-pressed="true"] .radio{border-color:var(--brand);border-width:4.5px}
+.opt .on{font-size:.88rem;font-weight:500;line-height:1.35}
+.opt .od{font-size:.74rem;color:var(--ink-2);margin-top:1px}
+.opt .days{font-family:var(--mono);font-size:.73rem;color:var(--ink-2);white-space:nowrap}
+
+.req-box{background:var(--surface-2);border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
+.req-box ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.req-box li{font-size:.85rem;color:var(--ink-2)}
+.req-box li b{color:var(--ink);font-weight:600}
+
+/* ---------- carga de documentos ---------- */
+.drop{
+  border:1.5px dashed var(--line);border-radius:11px;padding:26px 18px;text-align:center;
+  background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+.drop:hover,.drop.over{border-color:var(--brand);background:var(--brand-soft)}
+.drop svg{width:26px;height:26px;stroke:var(--brand);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.drop .d1{font-weight:600;font-size:.92rem}
+.drop .d2{font-size:.78rem;color:var(--ink-2)}
+
+.scan{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.scan-h{display:flex;justify-content:space-between;gap:12px;align-items:center;
+  padding:11px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.scan-h .fn{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.checks{display:flex;flex-direction:column}
+.chk{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;
+  padding:9px 14px;font-size:.84rem;border-top:1px solid var(--line)}
+.chk:first-child{border-top:0}
+.chk .ic{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;
+  font-size:.65rem;font-weight:700;background:var(--surface-2);color:var(--ink-2);font-family:var(--mono)}
+.chk[data-s="run"] .ic{background:var(--brand-soft);color:var(--brand)}
+.chk[data-s="ok"] .ic{background:var(--ok-soft);color:var(--ok)}
+.chk[data-s="bad"] .ic{background:var(--crit-soft);color:var(--crit)}
+.chk .cv{font-family:var(--mono);font-size:.72rem;color:var(--ink-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(42vw,300px)}
+.chk[data-s="bad"] .cv{color:var(--crit)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chk[data-s="run"] .ic{animation:spin 1s linear infinite}
+@media (prefers-reduced-motion: reduce){.chk[data-s="run"] .ic{animation:none}}
+
+/* ---------- resumen ---------- */
+.summary{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.summary .r{background:var(--surface);padding:11px 14px;display:grid;grid-template-columns:170px 1fr;gap:12px}
+@media (max-width:560px){.summary .r{grid-template-columns:1fr;gap:2px}}
+.summary dt{font-size:.8rem;color:var(--ink-2)}
+.summary dd{margin:0;font-size:.88rem;font-weight:500;overflow-wrap:anywhere}
+
+/* ---------- citas ---------- */
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.slot{padding:9px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);
+  font-family:var(--mono);font-size:.82rem;cursor:pointer;color:var(--ink)}
+.slot:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft)}
+.slot[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:500}
+.slot:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
+
+/* ---------- avisos ---------- */
+.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.85rem;align-items:flex-start}
+.notice.ok{background:var(--ok-soft);color:var(--ok)}
+.notice.crit{background:var(--crit-soft);color:var(--crit)}
+.notice.info{background:var(--brand-soft);color:var(--brand)}
+.notice b{font-weight:600}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;
+  font-size:.86rem;font-weight:500;z-index:60;box-shadow:0 8px 28px -10px rgba(0,0,0,.5);
+}
+.divider{height:1px;background:var(--line);border:0;margin:0}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv .k{font-size:.74rem;color:var(--ink-2)}
+.kv .v{font-size:.9rem;font-weight:500}
+.copyable{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.copyable .v{font-family:var(--mono);font-size:.85rem;user-select:all}
+</style>
+
+<!-- =================== ACCESO =================== -->
+<div id="view-auth" class="auth">
+  <div class="auth-wrap" style="padding-inline:16px">
+
+    <section>
+      <div class="brandline">
+        <div class="seal" aria-hidden="true">MP</div>
+        <div>
+          <div class="t1">Municipio de Panamá</div>
+          <div class="t2">Dirección de Permisos y Cumplimiento</div>
+        </div>
+      </div>
+      <h1 class="hero-h">Un solo lugar para <em>tramitar tu permiso</em> municipal.</h1>
+      <p class="hero-p">Solicita, adjunta tus documentos y sigue el estado de tu expediente sin ir a la ventanilla. Cada archivo se verifica y se sella antes de entrar al flujo de aprobación.</p>
+      <dl class="facts">
+        <div><dt>Trámites disponibles en línea</dt><dd id="fact-tramites">35</dd></div>
+        <div><dt>Solicitudes atendidas por año</dt><dd>+20,000</dd></div>
+        <div><dt>Tiempo actual en ventanilla</dt><dd>2 – 6 meses</dd></div>
+        <div><dt>Meta del portal</dt><dd>15 días hábiles</dd></div>
+      </dl>
+    </section>
+
+    <section class="card" style="padding:24px">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-login" aria-selected="true" aria-controls="pane-login">Iniciar sesión</button>
+        <button role="tab" id="tab-signup" aria-selected="false" aria-controls="pane-signup">Crear cuenta</button>
+      </div>
+
+      <!-- Inicio de sesión -->
+      <form id="pane-login" role="tabpanel" aria-labelledby="tab-login" style="display:flex;flex-direction:column;gap:14px" novalidate>
+        <h2>Entrar al portal</h2>
+        <div class="field">
+          <label for="li-email">Correo electrónico <span class="req">*</span></label>
+          <input id="li-email" type="email" autocomplete="username" placeholder="nombre@correo.com" required>
+        </div>
+        <div class="field">
+          <label for="li-pass">Contraseña <span class="req">*</span></label>
+          <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+        </div>
+        <div id="li-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+        <button class="btn wide" type="submit">Iniciar sesión</button>
+        <p class="small muted" style="text-align:center">
+          ¿No tienes cuenta? <a href="#crear" id="go-signup">Créala aquí</a>
+        </p>
+        <div class="demo-note">
+          <b>Cuenta de prueba</b> — correo <b>demo@mupa.gob.pa</b> · contraseña <b>demo1234</b>
+        </div>
+      </form>
+
+      <!-- Creación de cuenta -->
+      <form id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" hidden style="flex-direction:column;gap:13px" novalidate>
+        <h2>Crear cuenta</h2>
+        <p class="small muted">Todos los campos marcados con <span class="req">*</span> son obligatorios.</p>
+        <div class="row">
+          <div class="field">
+            <label for="su-nombre">Nombre <span class="req">*</span></label>
+            <input id="su-nombre" type="text" autocomplete="given-name" placeholder="Diego" required>
+          </div>
+          <div class="field">
+            <label for="su-apellido">Apellido <span class="req">*</span></label>
+            <input id="su-apellido" type="text" autocomplete="family-name" placeholder="López" required>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="su-edad">Edad <span class="req">*</span></label>
+            <input id="su-edad" type="number" min="18" max="110" placeholder="18" required>
+            <span class="hint">Debe ser mayor de edad para tramitar.</span>
+          </div>
+          <div class="field">
+            <label for="su-cedula">Cédula o RUC</label>
+            <input id="su-cedula" type="text" placeholder="8-123-4567" pattern="[0-9A-Za-z\-]{5,20}">
+          </div>
+        </div>
+        <div class="field">
+          <label for="su-org">Lugar donde colabora <span class="req">*</span></label>
+          <input id="su-org" type="text" autocomplete="organization" placeholder="Empresa, institución o «Independiente»" required>
+        </div>
+        <div class="field">
+          <label for="su-email">Correo electrónico <span class="req">*</span></label>
+          <input id="su-email" type="email" autocomplete="email" placeholder="nombre@correo.com" required>
+          <span class="hint">Aquí llegarán las notificaciones de tu expediente.</span>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="su-pass">Contraseña <span class="req">*</span></label>
+            <input id="su-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+          </div>
+          <div class="field">
+            <label for="su-pass2">Repetir contraseña <span class="req">*</span></label>
+            <input id="su-pass2" type="password" autocomplete="new-password" placeholder="Repite la contraseña" required>
+          </div>
+        </div>
+        <label style="display:flex;gap:9px;align-items:flex-start;font-size:.82rem;color:var(--ink-2)">
+          <input id="su-ok" type="checkbox" required style="margin-top:3px;width:auto">
+          <span>Autorizo el tratamiento de mis datos conforme a la <b style="color:var(--ink)">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
+        </label>
+        <div id="su-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+        <button class="btn wide" type="submit">Crear cuenta y entrar</button>
+        <p class="small muted" style="text-align:center">
+          ¿Ya tienes cuenta? <a href="#entrar" id="go-login">Inicia sesión</a>
+        </p>
+      </form>
+    </section>
+  </div>
+</div>
+
+<!-- =================== APLICACIÓN =================== -->
+<div id="view-app" class="shell" hidden>
+  <aside class="side">
+    <div class="brandline" style="margin:0;gap:10px">
+      <div class="seal" style="width:38px;height:38px;font-size:.75rem" aria-hidden="true">MP</div>
+      <div style="min-width:0">
+        <div class="t1" style="font-size:.9rem">Ventanilla Única</div>
+        <div class="t2" style="font-size:.72rem">Municipio de Panamá</div>
+      </div>
+    </div>
+
+    <nav class="menu" aria-label="Secciones del portal">
+      <button data-nav="inicio" aria-current="page">
+        <svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
+      <button data-nav="solicitar">
+        <svg viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></svg>Solicitar permiso</button>
+      <button data-nav="expedientes">
+        <svg viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Mis solicitudes</button>
+      <button data-nav="citas">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Citas</button>
+      <button data-nav="contacto">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg>Contacto</button>
+    </nav>
+
+    <div class="foot">
+      <div class="who">
+        <div class="avatar" id="u-ini">DL</div>
+        <div style="min-width:0">
+          <div class="n" id="u-name">—</div>
+          <div class="o" id="u-org">—</div>
+        </div>
+      </div>
+      <button class="btn plain" id="btn-theme" style="justify-content:flex-start">Cambiar tema</button>
+      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">Cerrar sesión</button>
+      <div class="opsbar">
+        <span><i class="dot-ok"></i>Antivirus documental activo</span>
+        <span><i class="dot-ok"></i>Monitoreo de servicio en línea</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-in">
+
+      <!-- ---------- INICIO ---------- -->
+      <section data-page="inicio">
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">Panel del solicitante</span>
+            <h1 id="greet">Buenas tardes</h1>
+            <p>Resumen de tus expedientes ante la Dirección de Permisos y Cumplimiento.</p>
+          </div>
+          <button class="btn" data-nav="solicitar">Nueva solicitud</button>
+        </div>
+
+        <div class="stats" style="margin-top:20px">
+          <div class="stat"><span class="v" id="k-total">0</span><span class="k">Expedientes</span></div>
+          <div class="stat s-warn"><span class="v" id="k-rev">0</span><span class="k">En revisión</span></div>
+          <div class="stat s-ok"><span class="v" id="k-apr">0</span><span class="k">Aprobados</span></div>
+          <div class="stat s-crit"><span class="v" id="k-sub">0</span><span class="k">Subsanación</span></div>
+        </div>
+
+        <div style="margin-top:22px">
+          <h2 style="margin-bottom:10px">Movimiento reciente</h2>
+          <div class="exp-list" id="recent"></div>
+        </div>
+      </section>
+
+      <!-- ---------- SOLICITAR PERMISO ---------- -->
+      <section data-page="solicitar" hidden>
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">Solicitud de permiso</span>
+            <h1>Nueva solicitud</h1>
+            <p>Cuatro pasos. Puedes volver atrás en cualquier momento; nada se envía hasta el último paso.</p>
+          </div>
+        </div>
+
+        <div class="stepper" id="stepper" style="margin-top:18px">
+          <div class="s" data-state="on"><span class="num">1</span><span class="lbl">Tipo de permiso</span></div>
+          <div class="s"><span class="num">2</span><span class="lbl">Datos del acto</span></div>
+          <div class="s"><span class="num">3</span><span class="lbl">Documentos</span></div>
+          <div class="s"><span class="num">4</span><span class="lbl">Revisión y envío</span></div>
+        </div>
+
+        <!-- Paso 1 -->
+        <div class="card" data-step="1" style="margin-top:14px;display:flex;flex-direction:column;gap:16px">
+          <div>
+            <h2>¿Qué tipo de permiso necesitas?</h2>
+            <p class="small muted" style="margin-top:4px">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
+          </div>
+          <div>
+            <span class="eyebrow">1 · Categoría</span>
+            <div class="cat-grid" id="cats" style="margin-top:8px"></div>
+          </div>
+          <div id="perm-wrap" hidden>
+            <span class="eyebrow">2 · Permiso específico</span>
+            <div class="opt-list" id="perms" style="margin-top:8px"></div>
+          </div>
+          <div id="req-wrap" hidden></div>
+          <div class="actions" style="justify-content:flex-end">
+            <button class="btn" id="s1-next" disabled>Continuar</button>
+          </div>
+        </div>
+
+        <!-- Paso 2 -->
+        <form class="card" data-step="2" hidden style="margin-top:14px;flex-direction:column;gap:16px" novalidate>
+          <div>
+            <h2>Datos del acto</h2>
+            <p class="small muted" style="margin-top:4px" id="s2-sub">—</p>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="f-corregimiento">Corregimiento <span class="req">*</span></label>
+              <select id="f-corregimiento" required><option value="">Selecciona…</option></select>
+            </div>
+            <div class="field">
+              <label for="f-tipoacto">Tipo de acto <span class="req">*</span></label>
+              <select id="f-tipoacto" required><option value="">Selecciona…</option></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-lugar">Lugar exacto donde se realizará <span class="req">*</span></label>
+            <input id="f-lugar" type="text" required placeholder="Ej. Plaza Catedral, San Felipe, frente al Museo del Canal">
+            <span class="hint">Dirección, punto de referencia o nombre del local.</span>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="f-fecha">Día del acto <span class="req">*</span></label>
+              <input id="f-fecha" type="date" required>
+              <span class="hint">Mínimo 15 días hábiles de antelación.</span>
+            </div>
+            <div class="field">
+              <label for="f-hini">Hora de inicio <span class="req">*</span></label>
+              <input id="f-hini" type="time" required value="18:00">
+            </div>
+            <div class="field">
+              <label for="f-hfin">Hora de cierre <span class="req">*</span></label>
+              <input id="f-hfin" type="time" required value="23:00">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="f-aforo">Aforo estimado <span class="req">*</span></label>
+              <input id="f-aforo" type="number" min="1" max="60000" required placeholder="250">
+              <span class="hint" id="aforo-hint">Número de personas esperadas.</span>
+            </div>
+            <div class="field">
+              <label for="f-resp">Responsable en sitio <span class="req">*</span></label>
+              <input id="f-resp" type="text" required placeholder="Nombre completo">
+            </div>
+            <div class="field">
+              <label for="f-tel">Teléfono de contacto <span class="req">*</span></label>
+              <input id="f-tel" type="tel" required placeholder="+507 6000-0000">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-motivo">Motivo de la solicitud <span class="req">*</span></label>
+            <textarea id="f-motivo" required minlength="20" placeholder="Describe brevemente la actividad, su finalidad y quiénes participan."></textarea>
+            <span class="hint"><span id="motivo-n">0</span>/600 caracteres · mínimo 20.</span>
+          </div>
+
+          <div id="s2-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div class="actions" style="justify-content:space-between">
+            <button class="btn ghost" type="button" data-back="1">Atrás</button>
+            <button class="btn" type="submit">Continuar</button>
+          </div>
+        </form>
+
+        <!-- Paso 3 -->
+        <div class="card" data-step="3" hidden style="margin-top:14px;flex-direction:column;gap:16px">
+          <div>
+            <h2>Documentación de respaldo</h2>
+            <p class="small muted" style="margin-top:4px">Un solo archivo <b>PDF</b> de hasta 10&nbsp;MB con los requisitos del permiso seleccionado. El archivo pasa por cinco verificaciones antes de adjuntarse al expediente.</p>
+          </div>
+
+          <div id="req-wrap-3"></div>
+
+          <input type="file" id="file-in" accept="application/pdf,.pdf" class="sr">
+          <button class="drop" id="drop" type="button">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4M12 4 7.5 8.5M12 4l4.5 4.5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+            <span class="d1">Arrastra tu PDF aquí o haz clic para elegirlo</span>
+            <span class="d2">Solo PDF · máximo 10 MB · un archivo por solicitud</span>
+          </button>
+
+          <div id="scan" class="scan" hidden>
+            <div class="scan-h">
+              <span class="fn" id="scan-name">—</span>
+              <span class="pill info" id="scan-pill">Verificando</span>
+            </div>
+            <div class="checks">
+              <div class="chk" data-c="fmt" data-s="wait"><span class="ic">1</span><span>Formato y firma del archivo (<span class="mono">%PDF</span>)</span><span class="cv"></span></div>
+              <div class="chk" data-c="size" data-s="wait"><span class="ic">2</span><span>Tamaño dentro del límite</span><span class="cv"></span></div>
+              <div class="chk" data-c="av" data-s="wait"><span class="ic">3</span><span>Análisis antivirus — ClamAV</span><span class="cv"></span></div>
+              <div class="chk" data-c="hash" data-s="wait"><span class="ic">4</span><span>Huella de integridad SHA-256</span><span class="cv"></span></div>
+              <div class="chk" data-c="log" data-s="wait"><span class="ic">5</span><span>Sellado en bitácora de auditoría</span><span class="cv"></span></div>
+            </div>
+          </div>
+
+          <div id="s3-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div class="actions" style="justify-content:space-between">
+            <button class="btn ghost" type="button" data-back="2">Atrás</button>
+            <button class="btn" id="s3-next" disabled>Continuar</button>
+          </div>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="card" data-step="4" hidden style="margin-top:14px;flex-direction:column;gap:16px">
+          <div>
+            <h2>Revisa antes de enviar</h2>
+            <p class="small muted" style="margin-top:4px">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
+          </div>
+          <dl class="summary" id="sum"></dl>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:.83rem;color:var(--ink-2)">
+            <input id="s4-ok" type="checkbox" style="margin-top:3px;width:auto">
+            <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b style="color:var(--ink)">Acuerdo Municipal N.° 130 de 2016</b>.</span>
+          </label>
+          <div class="actions" style="justify-content:space-between">
+            <button class="btn ghost" type="button" data-back="3">Atrás</button>
+            <button class="btn" id="s4-send" disabled>Enviar solicitud</button>
+          </div>
+        </div>
+
+        <!-- Comprobante -->
+        <div class="card" data-step="5" hidden style="margin-top:14px;flex-direction:column;gap:16px">
+          <div class="notice ok"><span>✓</span><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
+          <dl class="summary" id="receipt"></dl>
+          <div class="actions">
+            <button class="btn" data-nav="expedientes">Ver mis solicitudes</button>
+            <button class="btn ghost" id="new-again">Hacer otra solicitud</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- EXPEDIENTES ---------- -->
+      <section data-page="expedientes" hidden>
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">Seguimiento</span>
+            <h1>Mis solicitudes</h1>
+            <p>Cada expediente conserva su huella documental y su historial de revisión.</p>
+          </div>
+          <button class="btn ghost" data-nav="solicitar">Nueva solicitud</button>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="field" style="flex:2 1 260px">
+            <label for="q">Buscar por expediente o permiso</label>
+            <input id="q" type="text" placeholder="Ej. EXP-2026 o «espectáculo»">
+          </div>
+          <div class="field">
+            <label for="q-est">Estado</label>
+            <select id="q-est">
+              <option value="">Todos</option>
+              <option>En revisión</option>
+              <option>Aprobado</option>
+              <option>Subsanación</option>
+              <option>Recibido</option>
+            </select>
+          </div>
+        </div>
+        <div class="exp-list" id="all-exp" style="margin-top:16px"></div>
+        <p class="small muted" id="no-exp" hidden style="text-align:center;padding:24px">No hay expedientes que coincidan con la búsqueda.</p>
+      </section>
+
+      <!-- ---------- CITAS ---------- -->
+      <section data-page="citas" hidden>
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">Atención presencial</span>
+            <h1>Citas</h1>
+            <p>Reserva un turno cuando tu trámite requiera firma, entrega de originales o inspección.</p>
+          </div>
+        </div>
+
+        <form class="card" id="cita-form" style="margin-top:18px;flex-direction:column;gap:16px;display:flex" novalidate>
+          <div class="row">
+            <div class="field">
+              <label for="c-sede">Sede <span class="req">*</span></label>
+              <select id="c-sede" required>
+                <option value="">Selecciona…</option>
+                <option>Sede Central — Plaza Edison, Bella Vista</option>
+                <option>Casco Antiguo — San Felipe</option>
+                <option>Corregiduría de Juan Díaz</option>
+                <option>Corregiduría de Tocumen</option>
+                <option>Corregiduría de Las Cumbres</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c-motivo">Motivo de la cita <span class="req">*</span></label>
+              <select id="c-motivo" required>
+                <option value="">Selecciona…</option>
+                <option>Entrega de documentos originales</option>
+                <option>Firma de solicitud</option>
+                <option>Subsanación de expediente</option>
+                <option>Inspección de local o sitio</option>
+                <option>Consulta sobre requisitos</option>
+                <option>Retiro de permiso aprobado</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="c-exp">Expediente relacionado</label>
+              <select id="c-exp"><option value="">Ninguno / consulta general</option></select>
+            </div>
+            <div class="field">
+              <label for="c-fecha">Fecha <span class="req">*</span></label>
+              <input id="c-fecha" type="date" required>
+              <span class="hint">Atención de lunes a viernes.</span>
+            </div>
+          </div>
+          <div>
+            <span class="eyebrow">Horarios disponibles</span>
+            <div class="slots" id="slots" style="margin-top:8px"></div>
+            <p class="small muted" style="margin-top:8px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m. Los tachados ya están ocupados.</p>
+          </div>
+          <div id="c-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div class="actions" style="justify-content:flex-end">
+            <button class="btn" type="submit">Confirmar cita</button>
+          </div>
+        </form>
+
+        <div style="margin-top:22px">
+          <h2 style="margin-bottom:10px">Citas reservadas</h2>
+          <div class="exp-list" id="citas-list"></div>
+          <p class="small muted" id="no-citas" hidden>Aún no tienes citas reservadas.</p>
+        </div>
+      </section>
+
+      <!-- ---------- CONTACTO ---------- -->
+      <section data-page="contacto" hidden>
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">Ayuda</span>
+            <h1>Contacto</h1>
+            <p>Escríbenos sobre un expediente existente o sobre los requisitos de un trámite.</p>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:18px;align-items:stretch">
+          <form class="card" id="ct-form" style="flex:2 1 380px;display:flex;flex-direction:column;gap:14px" novalidate>
+            <h2>Enviar un mensaje</h2>
+            <div class="row">
+              <div class="field">
+                <label for="ct-nombre">Nombre completo <span class="req">*</span></label>
+                <input id="ct-nombre" type="text" required>
+              </div>
+              <div class="field">
+                <label for="ct-email">Correo electrónico <span class="req">*</span></label>
+                <input id="ct-email" type="email" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="ct-tema">Tema <span class="req">*</span></label>
+                <select id="ct-tema" required>
+                  <option value="">Selecciona…</option>
+                  <option>Estado de un expediente</option>
+                  <option>Requisitos de un trámite</option>
+                  <option>Problema técnico con el portal</option>
+                  <option>Tasas y pagos</option>
+                  <option>Queja o sugerencia</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="ct-exp">Expediente (opcional)</label>
+                <input id="ct-exp" type="text" placeholder="EXP-2026-…">
+              </div>
+            </div>
+            <div class="field">
+              <label for="ct-msg">Mensaje <span class="req">*</span></label>
+              <textarea id="ct-msg" required minlength="15" placeholder="Cuéntanos en qué podemos ayudarte."></textarea>
+            </div>
+            <div id="ct-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+            <div id="ct-ok" class="notice ok" hidden><span>✓</span><span></span></div>
+            <div class="actions" style="justify-content:flex-end">
+              <button class="btn" type="submit">Enviar mensaje</button>
+            </div>
+          </form>
+
+          <div class="card" style="flex:1 1 260px;display:flex;flex-direction:column;gap:16px">
+            <h2>Otros canales</h2>
+            <div class="kv">
+              <span class="k">Central telefónica</span>
+              <div class="copyable"><span class="v" id="cp-tel">+507 506-9600</span>
+                <button class="btn plain small" data-copy="cp-tel">Copiar</button></div>
+            </div>
+            <div class="kv">
+              <span class="k">Correo de la Dirección</span>
+              <div class="copyable"><span class="v" id="cp-mail">permisos@mupa.gob.pa</span>
+                <button class="btn plain small" data-copy="cp-mail">Copiar</button></div>
+            </div>
+            <hr class="divider">
+            <div class="kv">
+              <span class="k">Sede Central</span>
+              <span class="v">Plaza Edison, Piso 3<br>Ave. Ricardo J. Alfaro<br>Bella Vista, Ciudad de Panamá</span>
+            </div>
+            <div class="kv">
+              <span class="k">Horario de atención</span>
+              <span class="v">Lunes a viernes<br>8:00 a.m. – 4:00 p.m.</span>
+            </div>
+            <hr class="divider">
+            <p class="small muted">El catálogo completo de trámites y sus formularios oficiales está en
+              <a href="https://permisosycumplimiento.mupa.gob.pa/tramites-y-permisos/" target="_blank" rel="noopener">permisosycumplimiento.mupa.gob.pa</a>.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. DATOS — catálogo oficial de la Dirección de Permisos
+      y Cumplimiento del Municipio de Panamá (35 trámites).
+   ============================================================ */
+
+const DOCS = {
+  nota:   "Nota de solicitud dirigida al Alcalde de Panamá",
+  ced:    "Copia de cédula o pasaporte del solicitante",
+  aviso:  "Aviso de Operación vigente",
+  paz:    "Paz y Salvo Municipal",
+  rp:     "Certificado del Registro Público (personas jurídicas)",
+  poliza: "Póliza de responsabilidad civil",
+  bomb:   "Visto bueno del Cuerpo de Bomberos de Panamá",
+  plano:  "Plano de ubicación o croquis del sitio",
+  idoneo: "Idoneidad del personal técnico responsable",
+  minsa:  "Registro sanitario del MINSA",
+  ficha:  "Ficha técnica de los productos a utilizar",
+  ipf:    "Informe Previo Favorable vigente",
+  ruta:   "Ruta y horario detallado del recorrido",
+  veh:    "Registro vehicular y revisado vigente",
+  seg:    "Plan de seguridad y evacuación",
+  ambos:  "Nota de no objeción del corregimiento"
+};
+
+const CATALOGO = [
+  { cat:"Espectáculos y eventos públicos", icon:"evento", items:[
+    { id:"ESP-500-",  n:"Espectáculo Público — menos de 500 personas", d:15, aforo:[1,499],
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.poliza,DOCS.bomb] },
+    { id:"ESP-4000",  n:"Espectáculo Público — menos de 4,000 personas", d:20, aforo:[500,3999],
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.poliza,DOCS.bomb,DOCS.seg,DOCS.plano] },
+    { id:"ESP-500+",  n:"Espectáculo Público — más de 500 personas", d:25, aforo:[500,60000],
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.poliza,DOCS.bomb,DOCS.seg,DOCS.plano,DOCS.rp] },
+    { id:"FEST",      n:"Festividad", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.ambos,DOCS.poliza,DOCS.bomb] },
+    { id:"BANDAS",    n:"Práctica de Bandas Independientes", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.ambos,DOCS.ruta] },
+    { id:"PASEO",     n:"Paseo o Excursiones", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.ruta,DOCS.veh,DOCS.poliza] },
+    { id:"CHIVA",     n:"Chiva Parrandera", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.veh,DOCS.poliza,DOCS.ruta,DOCS.aviso] },
+    { id:"INVIT",     n:"Invitación de la Alcaldía de Panamá", d:8,
+      req:[DOCS.nota,DOCS.ced] }
+  ]},
+  { cat:"Publicidad y uso de espacio público", items:[
+    { id:"PUB-TEMP",  n:"Instalación de Publicidad Eventual o Temporal", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,DOCS.ipf] },
+    { id:"BANDEROLA", n:"Instalación de Banderolas Móviles", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano] },
+    { id:"ESP-EST",   n:"Uso de Espacio Público para Estacionamiento", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,DOCS.poliza] },
+    { id:"ACERA",     n:"Uso Temporal de Aceras", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano] },
+    { id:"CASCO",     n:"Uso Temporal de Espacio Público — Casco Antiguo", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,DOCS.poliza,"Visto bueno de la Oficina del Casco Antiguo"] }
+  ]},
+  { cat:"Sonido y unidades móviles", items:[
+    { id:"SON-TEMP",  n:"Servicio de Unidad Móvil de Sonido u Audio — Temporal", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.veh,DOCS.ruta] },
+    { id:"SON-PERM",  n:"Servicio de Unidad Móvil de Sonido u Audio", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.veh,DOCS.ruta] }
+  ]},
+  { cat:"Permisos nocturnos", items:[
+    { id:"NOC-A",     n:"Permiso Nocturno Categoría A", d:25,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.rp,DOCS.bomb,DOCS.ipf,DOCS.plano] },
+    { id:"NOC-A-REN", n:"Renovación de Permiso Nocturno Categoría A", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.paz,"Permiso nocturno del período anterior",DOCS.bomb] },
+    { id:"NOC-B",     n:"Permiso Nocturno Categoría B", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.bomb,DOCS.ipf] },
+    { id:"NOC-C",     n:"Permiso Nocturno Categoría C", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.bomb,DOCS.ipf] },
+    { id:"NOC-D",     n:"Permiso Nocturno Categoría D", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.bomb,DOCS.ipf] }
+  ]},
+  { cat:"Talleres", items:[
+    { id:"TAL-INST",  n:"Instalación y Operación de Taller", d:25,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.ipf,DOCS.plano,DOCS.bomb] },
+    { id:"TAL-HOR",   n:"Extensión de Horario para Taller", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,"Permiso de operación del taller"] },
+    { id:"TAL-MOV",   n:"Operación de Taller Móvil", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.veh,DOCS.idoneo] },
+    { id:"TAL-COMB",  n:"Taller — Extensión de Horario y Taller Móvil", d:18,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.veh,DOCS.idoneo] }
+  ]},
+  { cat:"Salud y saneamiento ambiental", items:[
+    { id:"DESINF",    n:"Permiso de Desinfección", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.minsa,DOCS.idoneo,DOCS.ficha] },
+    { id:"DESINF-A",  n:"Actualización de Desinfección", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.minsa,DOCS.ficha] },
+    { id:"GICP",      n:"Gestión Integral de Control de Plagas", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.minsa,DOCS.idoneo,DOCS.ficha,DOCS.paz] },
+    { id:"GICP-REN",  n:"Renovación de Gestión Integral de Control de Plagas", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.paz,DOCS.minsa,"Permiso GICP del período anterior"] },
+    { id:"GICP-ACT",  n:"Actualización de Gestión Integral de Control de Plagas", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.minsa,DOCS.ficha,DOCS.idoneo] }
+  ]},
+  { cat:"Comercio y actividades especiales", items:[
+    { id:"GANADO",    n:"Guía de Traslado de Ganado", d:5,
+      req:[DOCS.nota,DOCS.ced,"Certificado de salud animal del MIDA",DOCS.veh,DOCS.ruta] },
+    { id:"GRUAS",     n:"Inscripción de Grúas y Almacenamiento", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.rp,DOCS.veh,DOCS.poliza] },
+    { id:"NAVIDAD",   n:"Venta de Árboles de Navidad", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,"Permiso fitosanitario del MIDA"] },
+    { id:"FERRETE",   n:"Ferrete", d:8,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz] }
+  ]},
+  { cat:"Informes previos", items:[
+    { id:"IPF",       n:"Informe Previo Favorable", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.rp,DOCS.plano,"Certificación de uso de suelo",DOCS.bomb] },
+    { id:"IPF-ACT",   n:"Actualización de Informe Previo Favorable", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.ipf,DOCS.plano] }
+  ]}
+];
+
+const CORREGIMIENTOS = ["24 de Diciembre","Alcalde Díaz","Ancón","Bella Vista","Betania","Caimitillo",
+  "Calidonia","Chilibre","Curundú","Don Bosco","El Chorrillo","Ernesto Córdoba Campos","Juan Díaz",
+  "Las Cumbres","Las Garzas","Las Mañanitas","Pacora","Parque Lefevre","Pedregal","Pueblo Nuevo",
+  "Río Abajo","Rufina Alfaro","San Felipe","San Francisco","San Martín","Santa Ana","Tocumen","Ernesto Córdoba"];
+
+const TIPOS_ACTO = ["Concierto o presentación musical","Feria o exposición comercial","Actividad deportiva",
+  "Actividad religiosa","Desfile o pasacalle","Actividad cultural o artística","Verbena o baile popular",
+  "Rodaje audiovisual","Actividad corporativa privada","Actividad benéfica","Instalación o montaje",
+  "Operación comercial permanente","Servicio técnico o de saneamiento","Otro"];
+
+const MAX_MB = 10;
+
+/* ============================================================
+   2. ESTADO
+   ============================================================ */
+
+const state = {
+  user: null,
+  cuentas: [{ nombre:"Diego", apellido:"López", edad:22, cedula:"8-912-345",
+              org:"Universidad Tecnológica de Panamá", email:"demo@mupa.gob.pa", pass:"demo1234" }],
+  expedientes: [
+    { code:"EXP-2026-004182", permiso:"Espectáculo Público — menos de 4,000 personas",
+      lugar:"Parque Omar, San Francisco", fecha:"2026-10-18", estado:"En revisión",
+      etapa:"Revisión técnica · Dirección de Permisos", creado:"2026-09-12",
+      hash:"9f2c41ab77d0e5b3c8a1f64e2d9b0357cc84e1a6b2f7d3905e8c6a4b1d7f2093" },
+    { code:"EXP-2026-003914", permiso:"Uso Temporal de Aceras",
+      lugar:"Ave. Central, Santa Ana", fecha:"2026-09-30", estado:"Aprobado",
+      etapa:"Permiso emitido · descargable en ventanilla", creado:"2026-08-28",
+      hash:"3b7e19c4a5d82f60b1e93c7a0d4f8256be31a9c705d2e6f8143b0c9a7e5d2f61" },
+    { code:"EXP-2026-004055", permiso:"Permiso Nocturno Categoría B",
+      lugar:"Calle Uruguay, Bella Vista", fecha:"2026-11-02", estado:"Subsanación",
+      etapa:"Falta póliza de responsabilidad civil vigente", creado:"2026-09-05",
+      hash:"c41d8a0b62f7e395d0a7c8b41e6f2039a75db3c0e18f6425bd93a0c7e214f8d6" }
+  ],
+  citas: [],
+  sel: { cat:null, perm:null, datos:null, doc:null },
+  step: 1
+};
+
+/* ============================================================
+   3. UTILIDADES
+   ============================================================ */
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+const ALL_PERMS = CATALOGO.flatMap(c => c.items.map(i => ({ ...i, cat:c.cat })));
+
+function toast(msg){
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg; t.setAttribute("role","status");
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function showErr(el, msg){
+  if (!msg){ el.hidden = true; return; }
+  el.hidden = false; el.lastElementChild.textContent = msg;
+  el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+function fechaLarga(iso){
+  if (!iso) return "—";
+  const [y,m,d] = iso.split("-").map(Number);
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio",
+                 "agosto","septiembre","octubre","noviembre","diciembre"];
+  return `${d} de ${meses[m-1]} de ${y}`;
+}
+function hoyISO(off = 0){
+  const d = new Date(); d.setDate(d.getDate() + off);
+  return d.toISOString().slice(0,10);
+}
+function estadoClase(e){
+  return { "Aprobado":"ok", "En revisión":"warn", "Subsanación":"crit", "Recibido":"info" }[e] || "info";
+}
+function nuevoExpediente(){
+  const n = String(4200 + state.expedientes.length * 7 + Math.floor(Math.random()*90)).padStart(6,"0");
+  return `EXP-2026-${n}`;
+}
+
+/* ============================================================
+   4. TEMA
+   ============================================================ */
+
+$("#btn-theme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const oscuro = cur === "dark" ||
+    (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.setAttribute("data-theme", oscuro ? "light" : "dark");
+});
+
+/* ============================================================
+   5. AUTENTICACIÓN
+   ============================================================ */
+
+function mostrarPanel(cual){
+  const login = cual === "login";
+  $("#tab-login").setAttribute("aria-selected", login);
+  $("#tab-signup").setAttribute("aria-selected", !login);
+  $("#pane-login").hidden = !login;
+  $("#pane-signup").hidden = login;
+  $("#pane-login").style.display = login ? "flex" : "none";
+  $("#pane-signup").style.display = login ? "none" : "flex";
+}
+$("#tab-login").addEventListener("click", () => mostrarPanel("login"));
+$("#tab-signup").addEventListener("click", () => mostrarPanel("signup"));
+$("#go-signup").addEventListener("click", e => { e.preventDefault(); mostrarPanel("signup"); });
+$("#go-login").addEventListener("click", e => { e.preventDefault(); mostrarPanel("login"); });
+
+$("#pane-login").addEventListener("submit", e => {
+  e.preventDefault();
+  const email = $("#li-email").value.trim().toLowerCase();
+  const pass  = $("#li-pass").value;
+  if (!email || !pass) return showErr($("#li-err"), "Escribe tu correo y tu contraseña.");
+  const u = state.cuentas.find(c => c.email.toLowerCase() === email);
+  if (!u || u.pass !== pass)
+    return showErr($("#li-err"), "El correo o la contraseña no coinciden. Revisa e inténtalo de nuevo.");
+  showErr($("#li-err"), null);
+  entrar(u);
+});
+
+$("#pane-signup").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = id => $("#" + id).value.trim();
+  const err = $("#su-err");
+  const campos = { nombre:v("su-nombre"), apellido:v("su-apellido"), edad:v("su-edad"),
+                   cedula:v("su-cedula"), org:v("su-org"), email:v("su-email").toLowerCase() };
+
+  if (!campos.nombre || !campos.apellido) return showErr(err, "Escribe tu nombre y tu apellido.");
+  const edad = Number(campos.edad);
+  if (!edad || edad < 18) return showErr(err, "Debes tener al menos 18 años para tramitar un permiso.");
+  if (edad > 110) return showErr(err, "Revisa la edad ingresada.");
+  if (!campos.org) return showErr(err, "Indica el lugar donde colaboras, o escribe «Independiente».");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(campos.email))
+    return showErr(err, "El correo electrónico no tiene un formato válido.");
+  if (state.cuentas.some(c => c.email.toLowerCase() === campos.email))
+    return showErr(err, "Ya existe una cuenta con ese correo. Inicia sesión.");
+  const p1 = $("#su-pass").value, p2 = $("#su-pass2").value;
+  if (p1.length < 8) return showErr(err, "La contraseña debe tener al menos 8 caracteres.");
+  if (p1 !== p2) return showErr(err, "Las contraseñas no coinciden.");
+  if (!$("#su-ok").checked) return showErr(err, "Debes autorizar el tratamiento de tus datos para continuar.");
+
+  showErr(err, null);
+  const cuenta = { ...campos, edad, pass:p1 };
+  state.cuentas.push(cuenta);
+  entrar(cuenta);
+  toast("Cuenta creada. ¡Bienvenido!");
+});
+
+function entrar(u){
+  state.user = u;
+  $("#view-auth").hidden = true;
+  $("#view-app").hidden = false;
+  $("#u-name").textContent = `${u.nombre} ${u.apellido}`;
+  $("#u-org").textContent  = u.org;
+  $("#u-ini").textContent  = (u.nombre[0] + u.apellido[0]).toUpperCase();
+  const h = new Date().getHours();
+  $("#greet").textContent = `${h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches"}, ${u.nombre}`;
+  $("#ct-nombre").value = `${u.nombre} ${u.apellido}`;
+  $("#ct-email").value  = u.email;
+  $("#f-resp").value    = `${u.nombre} ${u.apellido}`;
+  ir("inicio");
+  pintarTodo();
+  window.scrollTo(0, 0);
+}
+
+$("#btn-logout").addEventListener("click", () => {
+  state.user = null;
+  $("#view-app").hidden = true;
+  $("#view-auth").hidden = false;
+  $("#li-pass").value = "";
+  mostrarPanel("login");
+  window.scrollTo(0, 0);
+});
+
+/* ============================================================
+   6. NAVEGACIÓN
+   ============================================================ */
+
+function ir(pagina){
+  $$("[data-page]").forEach(s => s.hidden = s.dataset.page !== pagina);
+  $$("nav.menu button").forEach(b =>
+    b.dataset.nav === pagina ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-nav]");
+  if (b) ir(b.dataset.nav);
+});
+
+/* ============================================================
+   7. PANEL E INDICADORES
+   ============================================================ */
+
+function tarjetaExpediente(x){
+  return `<article class="exp st-${estadoClase(x.estado)}">
+    <div style="min-width:0">
+      <div class="code">${esc(x.code)}</div>
+      <div class="name">${esc(x.permiso)}</div>
+      <div class="meta"><i>${esc(x.lugar)}</i><i>${fechaLarga(x.fecha)}</i><i>${esc(x.etapa)}</i></div>
+    </div>
+    <span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span>
+  </article>`;
+}
+
+function pintarTodo(){
+  const e = state.expedientes;
+  $("#k-total").textContent = e.length;
+  $("#k-rev").textContent   = e.filter(x => x.estado === "En revisión").length;
+  $("#k-apr").textContent   = e.filter(x => x.estado === "Aprobado").length;
+  $("#k-sub").textContent   = e.filter(x => x.estado === "Subsanación").length;
+  $("#recent").innerHTML    = e.slice(0, 3).map(tarjetaExpediente).join("");
+  filtrarExpedientes();
+  pintarCitas();
+  const sel = $("#c-exp");
+  sel.innerHTML = '<option value="">Ninguno / consulta general</option>' +
+    e.map(x => `<option>${esc(x.code)} — ${esc(x.permiso)}</option>`).join("");
+}
+
+function filtrarExpedientes(){
+  const q   = $("#q").value.trim().toLowerCase();
+  const est = $("#q-est").value;
+  const r = state.expedientes.filter(x =>
+    (!est || x.estado === est) &&
+    (!q || x.code.toLowerCase().includes(q) || x.permiso.toLowerCase().includes(q) ||
+     x.lugar.toLowerCase().includes(q)));
+  $("#all-exp").innerHTML = r.map(tarjetaExpediente).join("");
+  $("#no-exp").hidden = r.length > 0;
+}
+$("#q").addEventListener("input", filtrarExpedientes);
+$("#q-est").addEventListener("change", filtrarExpedientes);
+
+/* ============================================================
+   8. ASISTENTE — PASO 1: TIPO DE PERMISO
+   ============================================================ */
+
+$("#fact-tramites").textContent = ALL_PERMS.length;
+
+$("#cats").innerHTML = CATALOGO.map((c, i) =>
+  `<button type="button" class="cat" data-cat="${i}" aria-pressed="false">
+     <span class="cn">${esc(c.cat)}</span>
+     <span class="cc">${c.items.length} trámite${c.items.length > 1 ? "s" : ""}</span>
+   </button>`).join("");
+
+$("#cats").addEventListener("click", e => {
+  const b = e.target.closest(".cat"); if (!b) return;
+  $$(".cat").forEach(x => x.setAttribute("aria-pressed", x === b));
+  state.sel.cat = Number(b.dataset.cat);
+  state.sel.perm = null;
+  $("#perm-wrap").hidden = false;
+  $("#req-wrap").hidden = true;
+  $("#s1-next").disabled = true;
+  $("#perms").innerHTML = CATALOGO[state.sel.cat].items.map(p =>
+    `<button type="button" class="opt" data-perm="${esc(p.id)}" aria-pressed="false">
+       <span class="radio"></span>
+       <span><span class="on">${esc(p.n)}</span><span class="od">${p.req.length} documentos requeridos</span></span>
+       <span class="days">${p.d} días háb.</span>
+     </button>`).join("");
+});
+
+$("#perms").addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  $$(".opt", $("#perms")).forEach(x => x.setAttribute("aria-pressed", x === b));
+  state.sel.perm = ALL_PERMS.find(p => p.id === b.dataset.perm);
+  $("#s1-next").disabled = false;
+  const html = requisitosHTML(state.sel.perm);
+  $("#req-wrap").innerHTML = html; $("#req-wrap").hidden = false;
+  $("#req-wrap-3").innerHTML = html;
+});
+
+function requisitosHTML(p){
+  return `<div class="req-box">
+    <span class="eyebrow">Requisitos · ${esc(p.n)}</span>
+    <ul>${p.req.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    <p class="small muted" style="margin-top:10px">Reúne estos documentos en <b>un solo archivo PDF</b>.
+      Plazo estimado de resolución: <b>${p.d} días hábiles</b>.</p>
+  </div>`;
+}
+
+$("#s1-next").addEventListener("click", () => {
+  const p = state.sel.perm;
+  $("#s2-sub").textContent = p.n;
+  if (p.aforo){
+    $("#f-aforo").min = p.aforo[0]; $("#f-aforo").max = p.aforo[1];
+    $("#aforo-hint").textContent = `Este permiso aplica de ${p.aforo[0]} a ${p.aforo[1].toLocaleString("es-PA")} personas.`;
+  } else {
+    $("#f-aforo").min = 1; $("#f-aforo").max = 60000;
+    $("#aforo-hint").textContent = "Número de personas esperadas.";
+  }
+  paso(2);
+});
+
+/* ============================================================
+   9. ASISTENTE — PASO 2: DATOS DEL ACTO
+   ============================================================ */
+
+$("#f-corregimiento").insertAdjacentHTML("beforeend",
+  CORREGIMIENTOS.map(c => `<option>${esc(c)}</option>`).join(""));
+$("#f-tipoacto").insertAdjacentHTML("beforeend",
+  TIPOS_ACTO.map(t => `<option>${esc(t)}</option>`).join(""));
+$("#f-fecha").min = hoyISO(15);
+$("#f-motivo").addEventListener("input", e => {
+  if (e.target.value.length > 600) e.target.value = e.target.value.slice(0, 600);
+  $("#motivo-n").textContent = e.target.value.length;
+});
+
+$('[data-step="2"]').addEventListener("submit", e => {
+  e.preventDefault();
+  const err = $("#s2-err"), V = id => $("#" + id).value.trim();
+  const d = {
+    corregimiento:V("f-corregimiento"), tipoActo:V("f-tipoacto"), lugar:V("f-lugar"),
+    fecha:V("f-fecha"), hIni:V("f-hini"), hFin:V("f-hfin"),
+    aforo:Number(V("f-aforo")), resp:V("f-resp"), tel:V("f-tel"), motivo:V("f-motivo")
+  };
+  if (!d.corregimiento) return showErr(err, "Selecciona el corregimiento donde se realizará el acto.");
+  if (!d.tipoActo)      return showErr(err, "Selecciona el tipo de acto.");
+  if (d.lugar.length < 5) return showErr(err, "Describe el lugar exacto con un poco más de detalle.");
+  if (!d.fecha)         return showErr(err, "Indica el día del acto.");
+  if (d.fecha < hoyISO(15))
+    return showErr(err, "La fecha debe tener al menos 15 días hábiles de antelación.");
+  if (!d.hIni || !d.hFin) return showErr(err, "Indica la hora de inicio y la de cierre.");
+  if (d.hFin <= d.hIni && d.hFin > "06:00")
+    return showErr(err, "La hora de cierre debe ser posterior a la de inicio.");
+  const p = state.sel.perm;
+  if (!d.aforo || d.aforo < 1) return showErr(err, "Indica el aforo estimado.");
+  if (p.aforo && (d.aforo < p.aforo[0] || d.aforo > p.aforo[1]))
+    return showErr(err, `Para «${p.n}» el aforo debe estar entre ${p.aforo[0]} y ${p.aforo[1].toLocaleString("es-PA")} personas. Cambia el tipo de permiso o corrige el aforo.`);
+  if (!d.resp)  return showErr(err, "Indica quién será el responsable en sitio.");
+  if (!/[0-9]{7,}/.test(d.tel.replace(/[^0-9]/g,"")))
+    return showErr(err, "Escribe un teléfono de contacto válido, por ejemplo +507 6000-0000.");
+  if (d.motivo.length < 20) return showErr(err, "El motivo debe tener al menos 20 caracteres.");
+
+  showErr(err, null);
+  state.sel.datos = d;
+  paso(3);
+});
+
+/* ============================================================
+   10. ASISTENTE — PASO 3: DOCUMENTO PDF
+       Cadena de verificación: formato → tamaño → antivirus
+       (ClamAV) → huella SHA-256 → sellado en bitácora.
+   ============================================================ */
+
+const drop = $("#drop"), fileIn = $("#file-in");
+drop.addEventListener("click", () => fileIn.click());
+["dragenter","dragover"].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => {
+  const f = e.dataTransfer?.files?.[0]; if (f) verificar(f);
+});
+fileIn.addEventListener("change", e => { const f = e.target.files[0]; if (f) verificar(f); });
+
+const NUM_CHK = { fmt:"1", size:"2", av:"3", hash:"4", log:"5" };
+function marcar(c, estado, valor){
+  const el = $(`.chk[data-c="${c}"]`);
+  el.dataset.s = estado;
+  el.querySelector(".ic").textContent =
+    estado === "ok" ? "✓" : estado === "bad" ? "✕" : estado === "run" ? "◠" : NUM_CHK[c];
+  if (valor !== undefined) el.querySelector(".cv").textContent = valor;
+}
+const espera = ms => new Promise(r => setTimeout(r, ms));
+
+async function sha256(buf){
+  const h = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+async function verificar(file){
+  showErr($("#s3-err"), null);
+  state.sel.doc = null;
+  $("#s3-next").disabled = true;
+  $("#scan").hidden = false;
+  $("#scan-name").textContent = file.name;
+  $("#scan-pill").className = "pill info"; $("#scan-pill").textContent = "Verificando";
+  ["fmt","size","av","hash","log"].forEach(c => marcar(c, "wait", ""));
+
+  const fallar = (c, msg) => {
+    marcar(c, "bad", msg);
+    $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
+    showErr($("#s3-err"), msg);
+    fileIn.value = "";
+  };
+
+  // 1 · Formato real del archivo: extensión, tipo MIME y firma binaria %PDF-
+  marcar("fmt","run"); await espera(340);
+  const cab = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const firma = String.fromCharCode(...cab);
+  const extOK = /\.pdf$/i.test(file.name);
+  if (!extOK || firma !== "%PDF-")
+    return fallar("fmt", "El archivo no es un PDF válido. Sube un documento con extensión .pdf.");
+  marcar("fmt","ok","%PDF-");
+
+  // 2 · Tamaño
+  marcar("size","run"); await espera(240);
+  const mb = file.size / 1048576;
+  if (mb > MAX_MB)
+    return fallar("size", `El archivo pesa ${mb.toFixed(1)} MB y el límite es ${MAX_MB} MB. Comprime el PDF e inténtalo de nuevo.`);
+  if (file.size === 0) return fallar("size", "El archivo está vacío.");
+  marcar("size","ok", `${mb.toFixed(2)} MB`);
+
+  // 3 · Antivirus. En producción este paso llama a POST /api/documentos/escanear,
+  //     que entrega el archivo al demonio clamd de ClamAV (INSTREAM) y devuelve
+  //     {limpio:true|false, firma:"…"}. Aquí se simula la respuesta del servicio.
+  marcar("av","run"); await espera(1100);
+  const sospechoso = /eicar|virus|malware|test-?infected/i.test(file.name);
+  if (sospechoso)
+    return fallar("av", "ClamAV detectó una amenaza en el archivo (Eicar-Test-Signature). El documento fue puesto en cuarentena y no se adjuntó al expediente.");
+  marcar("av","ok","Sin amenazas");
+
+  // 4 · Huella de integridad, calculada realmente sobre el contenido del archivo
+  marcar("hash","run");
+  const hash = await sha256(await file.arrayBuffer());
+  await espera(260);
+  marcar("hash","ok", hash.slice(0, 24) + "…");
+
+  // 5 · Sellado en bitácora
+  marcar("log","run"); await espera(300);
+  const sello = new Date().toISOString().replace("T"," ").slice(0, 19);
+  marcar("log","ok", sello + " UTC");
+
+  $("#scan-pill").className = "pill ok"; $("#scan-pill").textContent = "Verificado";
+  state.sel.doc = { nombre:file.name, bytes:file.size, mb:mb.toFixed(2), hash, sello };
+  $("#s3-next").disabled = false;
+}
+
+$("#s3-next").addEventListener("click", () => {
+  if (!state.sel.doc) return showErr($("#s3-err"), "Adjunta y verifica un PDF antes de continuar.");
+  const p = state.sel.perm, d = state.sel.datos, doc = state.sel.doc;
+  $("#sum").innerHTML = [
+    ["Permiso solicitado", p.n],
+    ["Categoría", p.cat],
+    ["Solicitante", `${state.user.nombre} ${state.user.apellido} · ${state.user.org}`],
+    ["Corregimiento", d.corregimiento],
+    ["Lugar del acto", d.lugar],
+    ["Tipo de acto", d.tipoActo],
+    ["Día y horario", `${fechaLarga(d.fecha)} · ${d.hIni} a ${d.hFin}`],
+    ["Aforo estimado", `${d.aforo.toLocaleString("es-PA")} personas`],
+    ["Responsable en sitio", `${d.resp} · ${d.tel}`],
+    ["Motivo", d.motivo],
+    ["Documento adjunto", `${doc.nombre} (${doc.mb} MB) · verificado`],
+    ["Huella SHA-256", `<span class="mono" style="font-size:.76rem">${doc.hash}</span>`],
+    ["Plazo estimado", `${p.d} días hábiles`]
+  ].map(([k,v]) => `<div class="r"><dt>${esc(k)}</dt><dd>${k === "Huella SHA-256" ? v : esc(v)}</dd></div>`).join("");
+  paso(4);
+});
+
+$("#s4-ok").addEventListener("change", e => { $("#s4-send").disabled = !e.target.checked; });
+
+$("#s4-send").addEventListener("click", () => {
+  const p = state.sel.perm, d = state.sel.datos, doc = state.sel.doc;
+  const code = nuevoExpediente();
+  state.expedientes.unshift({
+    code, permiso:p.n, lugar:`${d.lugar}, ${d.corregimiento}`, fecha:d.fecha,
+    estado:"Recibido", etapa:"En cola de asignación · Dirección de Permisos",
+    creado:hoyISO(), hash:doc.hash
+  });
+  $("#receipt").innerHTML = [
+    ["Número de expediente", `<span class="mono" style="font-weight:600">${esc(code)}</span>`],
+    ["Permiso", esc(p.n)],
+    ["Recibido el", fechaLarga(hoyISO())],
+    ["Estado", "Recibido"],
+    ["Documento sellado", `<span class="mono" style="font-size:.76rem">${esc(doc.hash)}</span>`],
+    ["Resolución estimada", `${p.d} días hábiles`]
+  ].map(([k,v]) => `<div class="r"><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  pintarTodo();
+  paso(5);
+  toast(`Expediente ${code} generado`);
+});
+
+$("#new-again").addEventListener("click", reiniciarAsistente);
+
+function reiniciarAsistente(){
+  state.sel = { cat:null, perm:null, datos:null, doc:null };
+  $$(".cat").forEach(x => x.setAttribute("aria-pressed","false"));
+  $("#perm-wrap").hidden = true; $("#req-wrap").hidden = true;
+  $("#s1-next").disabled = true; $("#s3-next").disabled = true; $("#s4-send").disabled = true;
+  $("#s4-ok").checked = false;
+  $("#scan").hidden = true; fileIn.value = "";
+  $('[data-step="2"]').reset();
+  $("#f-resp").value = `${state.user.nombre} ${state.user.apellido}`;
+  $("#f-hini").value = "18:00"; $("#f-hfin").value = "23:00";
+  $("#motivo-n").textContent = "0";
+  [ "#s2-err","#s3-err" ].forEach(s => showErr($(s), null));
+  paso(1);
+}
+
+function paso(n){
+  state.step = n;
+  for (let i = 1; i <= 5; i++) $(`[data-step="${i}"]`).hidden = i !== n;
+  $(`[data-step="${n}"]`).style.display = "flex";
+  $$("#stepper .s").forEach((s, i) => {
+    s.dataset.state = n > 4 ? "done" : (i + 1 === n ? "on" : i + 1 < n ? "done" : "");
+    if (i + 1 < n || n > 4) s.querySelector(".num").textContent = "✓";
+    else s.querySelector(".num").textContent = String(i + 1);
+  });
+  $("#stepper").hidden = n === 5;
+  $(`[data-step="${n}"]`).scrollIntoView({ behavior:"smooth", block:"start" });
+}
+$$("[data-back]").forEach(b => b.addEventListener("click", () => paso(Number(b.dataset.back))));
+
+/* ============================================================
+   11. CITAS
+   ============================================================ */
+
+const HORAS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+               "13:00","13:30","14:00","14:30","15:00","15:30"];
+let horaSel = null;
+
+$("#c-fecha").min = hoyISO(1);
+$("#c-fecha").value = hoyISO(3);
+
+function pintarSlots(){
+  const f = $("#c-fecha").value || hoyISO(3);
+  // Ocupación determinista a partir de la fecha, para que el ejemplo sea estable.
+  const semilla = f.split("-").reduce((a,b) => a + Number(b), 0);
+  horaSel = null;
+  $("#slots").innerHTML = HORAS.map((h, i) => {
+    const ocupado = (semilla + i * 5) % 7 < 2 ||
+      state.citas.some(c => c.fecha === f && c.hora === h);
+    return `<button type="button" class="slot" data-h="${h}" aria-pressed="false" ${ocupado ? "disabled" : ""}>${h}</button>`;
+  }).join("");
+}
+$("#c-fecha").addEventListener("change", pintarSlots);
+$("#slots").addEventListener("click", e => {
+  const b = e.target.closest(".slot"); if (!b || b.disabled) return;
+  $$(".slot").forEach(x => x.setAttribute("aria-pressed", x === b));
+  horaSel = b.dataset.h;
+});
+pintarSlots();
+
+$("#cita-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const err = $("#c-err");
+  const sede = $("#c-sede").value, motivo = $("#c-motivo").value, fecha = $("#c-fecha").value;
+  if (!sede)   return showErr(err, "Selecciona la sede a la que asistirás.");
+  if (!motivo) return showErr(err, "Indica el motivo de la cita.");
+  if (!fecha)  return showErr(err, "Selecciona la fecha de la cita.");
+  const dia = new Date(fecha + "T12:00:00").getDay();
+  if (dia === 0 || dia === 6)
+    return showErr(err, "La atención presencial es de lunes a viernes. Elige otro día.");
+  if (!horaSel) return showErr(err, "Elige uno de los horarios disponibles.");
+
+  showErr(err, null);
+  const turno = "CT-" + String(1000 + state.citas.length * 3 + (new Date(fecha).getDate())).slice(0,4);
+  state.citas.unshift({ turno, sede, motivo, fecha, hora:horaSel, exp:$("#c-exp").value });
+  pintarCitas(); pintarSlots();
+  $("#c-sede").value = ""; $("#c-motivo").value = ""; $("#c-exp").value = "";
+  toast(`Cita ${turno} confirmada`);
+});
+
+function pintarCitas(){
+  $("#citas-list").innerHTML = state.citas.map(c =>
+    `<article class="exp st-info">
+      <div style="min-width:0">
+        <div class="code">Turno ${esc(c.turno)}${c.exp ? " · " + esc(c.exp.split(" — ")[0]) : ""}</div>
+        <div class="name">${esc(c.motivo)}</div>
+        <div class="meta"><i>${esc(c.sede)}</i><i>${fechaLarga(c.fecha)}</i><i>${esc(c.hora)}</i></div>
+      </div>
+      <span class="pill info">Confirmada</span>
+    </article>`).join("");
+  $("#no-citas").hidden = state.citas.length > 0;
+}
+
+/* ============================================================
+   12. CONTACTO
+   ============================================================ */
+
+$("#ct-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const err = $("#ct-err"), ok = $("#ct-ok");
+  ok.hidden = true;
+  const V = id => $("#" + id).value.trim();
+  if (!V("ct-nombre")) return showErr(err, "Escribe tu nombre completo.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(V("ct-email")))
+    return showErr(err, "El correo electrónico no tiene un formato válido.");
+  if (!V("ct-tema")) return showErr(err, "Selecciona el tema de tu mensaje.");
+  if (V("ct-msg").length < 15) return showErr(err, "Cuéntanos un poco más; el mensaje es muy corto.");
+  showErr(err, null);
+  const ticket = "MSG-" + Math.floor(100000 + Math.random() * 899999);
+  ok.hidden = false;
+  ok.lastElementChild.innerHTML =
+    `<b>Mensaje enviado.</b> Tu número de seguimiento es <span class="mono">${ticket}</span>. Respondemos en un plazo de 3 días hábiles.`;
+  $("#ct-msg").value = ""; $("#ct-exp").value = ""; $("#ct-tema").value = "";
+});
+
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  const txt = $("#" + b.dataset.copy).textContent.trim();
+  try { await navigator.clipboard.writeText(txt); toast("Copiado: " + txt); }
+  catch { const r = document.createRange(); r.selectNode($("#" + b.dataset.copy));
+          getSelection().removeAllRanges(); getSelection().addRange(r);
+          toast("Selecciona y copia con el teclado"); }
+});
+
+/* ============================================================
+   13. ARRANQUE
+   ============================================================ */
+mostrarPanel("login");
+</script>
