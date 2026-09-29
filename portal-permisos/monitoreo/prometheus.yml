@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    entorno: desarrollo
+
+rule_files:
+  - /etc/prometheus/alertas.yml
+
+scrape_configs:
+  # La API de la Ventanilla Única. host.docker.internal permite que Prometheus,
+  # dentro de Docker, alcance uvicorn corriendo en tu máquina.
+  - job_name: ventanilla-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          municipio: panama
+
+    # Al escalar a varios municipios sólo se agregan objetivos:
+    #   - targets: ["api-san-miguelito:8000"]
+    #     labels: {municipio: san-miguelito}
+    #   - targets: ["api-la-chorrera:8000"]
+    #     labels: {municipio: la-chorrera}
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

@@ -1,0 +1,53 @@
+groups:
+  - name: ventanilla-unica
+    rules:
+
+      - alert: AntivirusCaido
+        expr: mupa_antivirus_arriba == 0
+        for: 2m
+        labels: { severidad: critica }
+        annotations:
+          summary: "ClamAV no responde en {{ $labels.municipio }}"
+          description: >
+            El demonio clamd lleva 2 minutos sin responder. La API está
+            rechazando toda carga de documentos, así que ningún trámite
+            puede avanzar. Revisar: docker compose logs clamav
+
+      - alert: AmenazaDetectada
+        expr: increase(mupa_amenazas_detectadas_total[10m]) > 0
+        labels: { severidad: alta }
+        annotations:
+          summary: "Documento infectado en {{ $labels.municipio }} ({{ $labels.firma }})"
+          description: >
+            ClamAV puso un documento en cuarentena. Revisar la bitácora
+            para identificar la cuenta que lo subió.
+
+      - alert: MuchosRechazos
+        expr: |
+          sum by (municipio) (rate(mupa_documentos_verificados_total{resultado!="limpio"}[15m]))
+          /
+          sum by (municipio) (rate(mupa_documentos_verificados_total[15m])) > 0.3
+        for: 15m
+        labels: { severidad: media }
+        annotations:
+          summary: "Más del 30% de los documentos se rechazan en {{ $labels.municipio }}"
+          description: >
+            Puede indicar requisitos mal explicados en el portal, o un
+            formulario oficial que la gente está subiendo en formato incorrecto.
+
+      - alert: ApiLenta
+        expr: histogram_quantile(0.95, sum by (le, ruta) (rate(mupa_http_segundos_bucket[5m]))) > 2
+        for: 10m
+        labels: { severidad: media }
+        annotations:
+          summary: "El percentil 95 de {{ $labels.ruta }} supera 2 segundos"
+
+      - alert: TramitesFueraDePlazo
+        expr: histogram_quantile(0.90, sum by (le, permiso, municipio) (rate(mupa_tramite_dias_bucket[7d]))) > 30
+        for: 1h
+        labels: { severidad: media }
+        annotations:
+          summary: "«{{ $labels.permiso }}» está tardando más de 30 días hábiles"
+          description: >
+            El objetivo del proyecto es bajar de 2–6 meses a 15 días hábiles.
+            Esta alerta marca los trámites que se están saliendo de la meta.

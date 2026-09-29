@@ -1,0 +1,61 @@
+# Levanta las tres piezas de infraestructura del proyecto:
+#   clamav     → antivirus documental (puerto 3310)
+#   prometheus → recolecta las métricas de la API (puerto 9090)
+#   grafana    → los tableros (puerto 3001, usuario admin / admin)
+#
+#   docker compose up -d
+#   # la API se levanta aparte:  uvicorn main:app --port 8000
+#
+# La primera vez ClamAV tarda ~2 minutos en descargar su base de firmas.
+# Compruébalo con:  docker compose logs -f clamav
+
+services:
+  clamav:
+    image: clamav/clamav:1.4-bookworm
+    container_name: mupa-clamav
+    ports:
+      - "3310:3310"
+    volumes:
+      - firmas:/var/lib/clamav        # persiste las firmas entre reinicios
+    environment:
+      CLAMAV_NO_MILTERD: "true"
+      FRESHCLAM_CHECKS: "4"           # actualiza firmas 4 veces al día
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 60s
+      retries: 3
+      start_period: 180s
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: mupa-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - metricas:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=90d
+
+  grafana:
+    image: grafana/grafana:11.5.0
+    container_name: mupa-grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - tableros:/var/lib/grafana
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/mupa.json:ro
+      - ./grafana-provider.yml:/etc/grafana/provisioning/dashboards/mupa.yml:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+volumes:
+  firmas:
+  metricas:
+  tableros:
