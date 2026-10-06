@@ -25,4 +25,30 @@ async function violaciones(page) {
     `${v.id}: ${v.nodes.slice(0, 3).map(n => n.target.join(" ")).join(", ")}`);
 }
 
-module.exports = { CUENTA, entrar, violaciones };
+async function irAPaso2(page, categoria = /Espectáculos y eventos públicos/, permiso = /menos de 4,000/) {
+  await page.getByRole("navigation", { name: /Secciones/ }).getByRole("button", { name: "Solicitar permiso" }).click();
+  await page.getByRole("button", { name: categoria }).click();
+  await page.getByRole("button", { name: permiso }).click();
+  await page.locator("#s1-next").click();
+  await expect(page.locator('[data-step="2"]')).toBeVisible();
+}
+
+async function llenarPaso2(page, cambios = {}) {
+  const v = {
+    corregimiento: "San Francisco", tipoActo: "Concierto o presentación musical",
+    lugar: "Parque Omar, calle 74 San Francisco",
+    fecha: new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10),
+    aforo: "800", tel: "+507 6000-0000",
+    motivo: "Concierto benéfico al aire libre organizado por una fundación local.",
+    ...cambios,
+  };
+  await page.locator("#f-corregimiento").selectOption(v.corregimiento);
+  await page.locator("#f-tipoacto").selectOption(v.tipoActo);
+  await page.locator("#f-lugar").fill(v.lugar);
+  await page.locator("#f-fecha").fill(v.fecha);
+  await page.locator("#f-aforo").fill(v.aforo);
+  await page.locator("#f-tel").fill(v.tel);
+  await page.locator("#f-motivo").fill(v.motivo);
+}
+
+module.exports = { CUENTA, entrar, violaciones, irAPaso2, llenarPaso2 };

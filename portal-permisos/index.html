@@ -140,7 +140,14 @@ input[type=date],input[type=time],input[type=tel],select,textarea{
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
 input[type=checkbox]{min-width:20px;height:20px;accent-color:var(--brand);flex:none}
 textarea{resize:vertical;min-height:88px}
-input:invalid:not(:placeholder-shown){border-color:var(--crit)}
+[aria-invalid="true"]{border-color:var(--crit) !important;box-shadow:0 0 0 3px var(--crit-soft) !important}
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:50px}
+.ver-clave{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;
+  border:0;border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+.ver-clave:hover{color:var(--ink);background:var(--surface-2)}
+.ver-clave svg{width:20px;height:20px}
+.ver-clave[aria-pressed="true"]{color:var(--brand)}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   min-height:var(--tap);padding:10px 20px;border-radius:8px;border:1px solid transparent;
@@ -471,7 +478,10 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         </div>
         <div class="field">
           <label for="li-pass">Contraseña <span class="req">*</span></label>
-          <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <div class="pass-wrap">
+            <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <button type="button" class="ver-clave" aria-controls="li-pass" aria-pressed="false" aria-label="Mostrar contraseña"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
         </div>
         <div id="li-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Iniciar sesión</button>
@@ -520,7 +530,10 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         <div class="row">
           <div class="field">
             <label for="su-pass">Contraseña <span class="req">*</span></label>
-            <input id="su-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+            <div class="pass-wrap">
+              <input id="su-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+              <button type="button" class="ver-clave" aria-controls="su-pass" aria-pressed="false" aria-label="Mostrar contraseña"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
           </div>
           <div class="field">
             <label for="su-pass2">Repetir contraseña <span class="req">*</span></label>
@@ -1133,11 +1146,36 @@ function toast(msg){
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
-function showErr(el, msg){
+function showErr(el, msg, campoId){
+  const zona = el.closest("form, .card") || document;
+  $$('[aria-invalid="true"]', zona).forEach(limpiarCampo);
   if (!msg){ el.hidden = true; return; }
   el.hidden = false; el.lastElementChild.textContent = msg;
-  el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  const campo = campoId && $("#" + campoId);
+  if (campo){
+    // El error queda unido al campo: se ve marcado, el lector de pantalla lee
+    // el mensaje y el foco llega justo donde hay que corregir.
+    campo.setAttribute("aria-invalid", "true");
+    campo.setAttribute("aria-describedby", el.id);
+    campo.focus();
+  } else {
+    el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
 }
+function limpiarCampo(c){
+  c.removeAttribute("aria-invalid");
+  if (/-err$/.test(c.getAttribute("aria-describedby") || "")) c.removeAttribute("aria-describedby");
+}
+["input", "change"].forEach(ev => document.addEventListener(ev, e => {
+  if (e.target instanceof Element && e.target.getAttribute("aria-invalid") === "true") limpiarCampo(e.target);
+}));
+document.addEventListener("click", e => {
+  const b = e.target.closest(".ver-clave"); if (!b) return;
+  const campo = $("#" + b.getAttribute("aria-controls"));
+  const ver = campo.type === "password";
+  campo.type = ver ? "text" : "password";
+  b.setAttribute("aria-pressed", String(ver));
+});
 function fechaLarga(iso){
   if (!iso) return "—";
   const [y,m,d] = iso.split("-").map(Number);
@@ -1196,7 +1234,7 @@ $("#pane-login").addEventListener("submit", e => {
   e.preventDefault();
   const email = $("#li-email").value.trim().toLowerCase();
   const pass  = $("#li-pass").value;
-  if (!email || !pass) return showErr($("#li-err"), "Escribe tu correo y tu contraseña.");
+  if (!email || !pass) return showErr($("#li-err"), "Escribe tu correo y tu contraseña.", email ? "li-pass" : "li-email");
   const u = state.cuentas.find(c => c.email.toLowerCase() === email);
   if (!u || u.pass !== pass)
     return showErr($("#li-err"), "El correo o la contraseña no coinciden. Revisa e inténtalo de nuevo.");
@@ -1211,19 +1249,19 @@ $("#pane-signup").addEventListener("submit", e => {
   const campos = { nombre:v("su-nombre"), apellido:v("su-apellido"), edad:v("su-edad"),
                    cedula:v("su-cedula"), org:v("su-org"), email:v("su-email").toLowerCase() };
 
-  if (!campos.nombre || !campos.apellido) return showErr(err, "Escribe tu nombre y tu apellido.");
+  if (!campos.nombre || !campos.apellido) return showErr(err, "Escribe tu nombre y tu apellido.", campos.nombre ? "su-apellido" : "su-nombre");
   const edad = Number(campos.edad);
-  if (!edad || edad < 18) return showErr(err, "Debes tener al menos 18 años para tramitar un permiso.");
-  if (edad > 110) return showErr(err, "Revisa la edad ingresada.");
-  if (!campos.org) return showErr(err, "Indica el lugar donde colaboras, o escribe «Independiente».");
+  if (!edad || edad < 18) return showErr(err, "Debes tener al menos 18 años para tramitar un permiso.", "su-edad");
+  if (edad > 110) return showErr(err, "Revisa la edad ingresada.", "su-edad");
+  if (!campos.org) return showErr(err, "Indica el lugar donde colaboras, o escribe «Independiente».", "su-org");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(campos.email))
-    return showErr(err, "El correo electrónico no tiene un formato válido.");
+    return showErr(err, "El correo electrónico no tiene un formato válido.", "su-email");
   if (state.cuentas.some(c => c.email.toLowerCase() === campos.email))
-    return showErr(err, "Ya existe una cuenta con ese correo. Inicia sesión.");
+    return showErr(err, "Ya existe una cuenta con ese correo. Inicia sesión.", "su-email");
   const p1 = $("#su-pass").value, p2 = $("#su-pass2").value;
-  if (p1.length < 8) return showErr(err, "La contraseña debe tener al menos 8 caracteres.");
-  if (p1 !== p2) return showErr(err, "Las contraseñas no coinciden.");
-  if (!$("#su-ok").checked) return showErr(err, "Debes autorizar el tratamiento de tus datos para continuar.");
+  if (p1.length < 8) return showErr(err, "La contraseña debe tener al menos 8 caracteres.", "su-pass");
+  if (p1 !== p2) return showErr(err, "Las contraseñas no coinciden.", "su-pass2");
+  if (!$("#su-ok").checked) return showErr(err, "Debes autorizar el tratamiento de tus datos para continuar.", "su-ok");
 
   showErr(err, null);
   const cuenta = { ...campos, edad, pass:p1 };
@@ -1402,23 +1440,23 @@ $('[data-step="2"]').addEventListener("submit", e => {
     fecha:V("f-fecha"), hIni:V("f-hini"), hFin:V("f-hfin"),
     aforo:Number(V("f-aforo")), resp:V("f-resp"), tel:V("f-tel"), motivo:V("f-motivo")
   };
-  if (!d.corregimiento) return showErr(err, "Selecciona el corregimiento donde se realizará el acto.");
-  if (!d.tipoActo)      return showErr(err, "Selecciona el tipo de acto.");
-  if (d.lugar.length < 5) return showErr(err, "Describe el lugar exacto con un poco más de detalle.");
-  if (!d.fecha)         return showErr(err, "Indica el día del acto.");
+  if (!d.corregimiento) return showErr(err, "Selecciona el corregimiento donde se realizará el acto.", "f-corregimiento");
+  if (!d.tipoActo)      return showErr(err, "Selecciona el tipo de acto.", "f-tipoacto");
+  if (d.lugar.length < 5) return showErr(err, "Describe el lugar exacto con un poco más de detalle.", "f-lugar");
+  if (!d.fecha)         return showErr(err, "Indica el día del acto.", "f-fecha");
   if (d.fecha < hoyISO(15))
-    return showErr(err, "La fecha debe tener al menos 15 días hábiles de antelación.");
-  if (!d.hIni || !d.hFin) return showErr(err, "Indica la hora de inicio y la de cierre.");
+    return showErr(err, "La fecha debe tener al menos 15 días hábiles de antelación.", "f-fecha");
+  if (!d.hIni || !d.hFin) return showErr(err, "Indica la hora de inicio y la de cierre.", d.hIni ? "f-hfin" : "f-hini");
   if (d.hFin <= d.hIni && d.hFin > "06:00")
-    return showErr(err, "La hora de cierre debe ser posterior a la de inicio.");
+    return showErr(err, "La hora de cierre debe ser posterior a la de inicio.", "f-hfin");
   const p = state.sel.perm;
-  if (!d.aforo || d.aforo < 1) return showErr(err, "Indica el aforo estimado.");
+  if (!d.aforo || d.aforo < 1) return showErr(err, "Indica el aforo estimado.", "f-aforo");
   if (p.aforo && (d.aforo < p.aforo[0] || d.aforo > p.aforo[1]))
-    return showErr(err, `Para «${p.n}» el aforo debe estar entre ${p.aforo[0]} y ${p.aforo[1].toLocaleString("es-PA")} personas. Cambia el tipo de permiso o corrige el aforo.`);
-  if (!d.resp)  return showErr(err, "Indica quién será el responsable en sitio.");
+    return showErr(err, `Para «${p.n}» el aforo debe estar entre ${p.aforo[0]} y ${p.aforo[1].toLocaleString("es-PA")} personas. Cambia el tipo de permiso o corrige el aforo.`, "f-aforo");
+  if (!d.resp)  return showErr(err, "Indica quién será el responsable en sitio.", "f-resp");
   if (!/[0-9]{7,}/.test(d.tel.replace(/[^0-9]/g,"")))
-    return showErr(err, "Escribe un teléfono de contacto válido, por ejemplo +507 6000-0000.");
-  if (d.motivo.length < 20) return showErr(err, "El motivo debe tener al menos 20 caracteres.");
+    return showErr(err, "Escribe un teléfono de contacto válido, por ejemplo +507 6000-0000.", "f-tel");
+  if (d.motivo.length < 20) return showErr(err, "El motivo debe tener al menos 20 caracteres.", "f-motivo");
 
   showErr(err, null);
   state.sel.datos = d;
@@ -1638,12 +1676,12 @@ $("#cita-form").addEventListener("submit", e => {
   e.preventDefault();
   const err = $("#c-err");
   const sede = $("#c-sede").value, motivo = $("#c-motivo").value, fecha = $("#c-fecha").value;
-  if (!sede)   return showErr(err, "Selecciona la sede a la que asistirás.");
-  if (!motivo) return showErr(err, "Indica el motivo de la cita.");
-  if (!fecha)  return showErr(err, "Selecciona la fecha de la cita.");
+  if (!sede)   return showErr(err, "Selecciona la sede a la que asistirás.", "c-sede");
+  if (!motivo) return showErr(err, "Indica el motivo de la cita.", "c-motivo");
+  if (!fecha)  return showErr(err, "Selecciona la fecha de la cita.", "c-fecha");
   const dia = new Date(fecha + "T12:00:00").getDay();
   if (dia === 0 || dia === 6)
-    return showErr(err, "La atención presencial es de lunes a viernes. Elige otro día.");
+    return showErr(err, "La atención presencial es de lunes a viernes. Elige otro día.", "c-fecha");
   if (!horaSel) return showErr(err, "Elige uno de los horarios disponibles.");
 
   showErr(err, null);
@@ -1676,11 +1714,11 @@ $("#ct-form").addEventListener("submit", e => {
   const err = $("#ct-err"), ok = $("#ct-ok");
   ok.hidden = true;
   const V = id => $("#" + id).value.trim();
-  if (!V("ct-nombre")) return showErr(err, "Escribe tu nombre completo.");
+  if (!V("ct-nombre")) return showErr(err, "Escribe tu nombre completo.", "ct-nombre");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(V("ct-email")))
-    return showErr(err, "El correo electrónico no tiene un formato válido.");
-  if (!V("ct-tema")) return showErr(err, "Selecciona el tema de tu mensaje.");
-  if (V("ct-msg").length < 15) return showErr(err, "Cuéntanos un poco más; el mensaje es muy corto.");
+    return showErr(err, "El correo electrónico no tiene un formato válido.", "ct-email");
+  if (!V("ct-tema")) return showErr(err, "Selecciona el tema de tu mensaje.", "ct-tema");
+  if (V("ct-msg").length < 15) return showErr(err, "Cuéntanos un poco más; el mensaje es muy corto.", "ct-msg");
   showErr(err, null);
   const ticket = "MSG-" + Math.floor(100000 + Math.random() * 899999);
   ok.hidden = false;
