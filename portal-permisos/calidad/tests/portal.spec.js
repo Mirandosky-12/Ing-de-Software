@@ -17,8 +17,10 @@ const TMP = path.join(__dirname, "..", ".tmp");
 
 /** Genera archivos de prueba sin depender de binarios externos. */
 function archivo(nombre, contenido) {
+  // Una carpeta por llamada: las pruebas corren en paralelo y compartir el
+  // archivo hacía que una lo reescribiera mientras la otra lo leía.
   fs.mkdirSync(TMP, { recursive: true });
-  const ruta = path.join(TMP, nombre);
+  const ruta = path.join(fs.mkdtempSync(path.join(TMP, "f-")), nombre);
   fs.writeFileSync(ruta, contenido);
   return ruta;
 }
@@ -72,10 +74,10 @@ test.describe("Autenticación", () => {
     await page.getByRole("tab", { name: "Crear cuenta" }).click();
     await page.getByLabel("Nombre", { exact: false }).first().fill("Ana");
     await page.getByLabel("Apellido").fill("Pérez");
-    await page.getByLabel("Edad").fill("16");
+    await page.getByLabel(/^Edad/).fill("16");
     await page.getByLabel(/Lugar donde colabora/).fill("Independiente");
-    await page.getByLabel(/Correo electrónico/).last().fill("ana.prueba@correo.com");
-    await page.getByLabel("Contraseña", { exact: false }).first().fill("clave12345");
+    await page.locator("#pane-signup").getByLabel(/Correo electrónico/).fill("ana.prueba@correo.com");
+    await page.locator("#pane-signup").getByLabel("Contraseña", { exact: false }).first().fill("clave12345");
     await page.getByLabel(/Repetir contraseña/).fill("clave12345");
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: /Crear cuenta y entrar/ }).click();
@@ -88,10 +90,10 @@ test.describe("Autenticación", () => {
     await page.getByRole("tab", { name: "Crear cuenta" }).click();
     await page.getByLabel("Nombre", { exact: false }).first().fill("Luis");
     await page.getByLabel("Apellido").fill("Gómez");
-    await page.getByLabel("Edad").fill("30");
+    await page.getByLabel(/^Edad/).fill("30");
     await page.getByLabel(/Lugar donde colabora/).fill("Municipio de Panamá");
-    await page.getByLabel(/Correo electrónico/).last().fill("luis.prueba@correo.com");
-    await page.getByLabel("Contraseña", { exact: false }).first().fill("clave12345");
+    await page.locator("#pane-signup").getByLabel(/Correo electrónico/).fill("luis.prueba@correo.com");
+    await page.locator("#pane-signup").getByLabel("Contraseña", { exact: false }).first().fill("clave12345");
     await page.getByLabel(/Repetir contraseña/).fill("otraclave99");
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: /Crear cuenta y entrar/ }).click();
@@ -117,7 +119,7 @@ test.describe("Solicitud de permiso", () => {
     qase.id(11);
     await page.getByRole("button", { name: "Solicitar permiso" }).click();
     await page.getByRole("button", { name: /Permisos nocturnos/ }).click();
-    await page.getByRole("button", { name: /Permiso Nocturno Categoría A$/ }).click();
+    await page.getByRole("button", { name: /^Permiso Nocturno Categoría A$/ }).click();
     await expect(page.getByText("Paz y Salvo Municipal")).toBeVisible();
     await expect(page.getByText(/25 días hábiles/)).toBeVisible();
   });

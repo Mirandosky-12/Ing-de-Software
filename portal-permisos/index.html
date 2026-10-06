@@ -1,4 +1,12 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Portal oficial para solicitar permisos ante la Dirección de Permisos y Cumplimiento del Municipio de Panamá.">
 <title>Ventanilla Única Municipal</title>
+<script>try{var t=localStorage.getItem("vum-tema");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,6 +34,10 @@
   --crit:#a52218;
   --crit-soft:#fbe3e1;
   --shadow:0 1px 2px rgba(21,33,44,.06), 0 8px 24px -16px rgba(21,33,44,.28);
+  --accent-soft:#f8ecdb;
+  --franja:#0a3f6f;
+  --ring:0 0 0 3px rgba(11,79,138,.28);
+  --tap:44px;               /* alto mínimo de lo que se toca con el dedo */
 
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
@@ -51,6 +63,7 @@
     --crit:#f0796c;
     --crit-soft:#331a1a;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  --accent-soft:#33260f; --franja:#0d2d4a; --ring:0 0 0 3px rgba(79,161,224,.35);
     color-scheme:dark;
   }
 }
@@ -73,15 +86,22 @@
   --crit:#f0796c;
   --crit-soft:#331a1a;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  --accent-soft:#33260f; --franja:#0d2d4a; --ring:0 0 0 3px rgba(79,161,224,.35);
   color-scheme:dark;
 }
 
 *{box-sizing:border-box}
+/* `hidden` debe ganar siempre. Antes .shell, .notice y los estilos en línea de
+   los pasos ponían su propio display y dejaban visible lo que debía ocultarse:
+   el panel aparecía bajo el login y los pasos del asistente se apilaban. */
+[hidden]{display:none !important}
+html{height:100%}
 body{
+  margin:0;min-height:100%;
   background:var(--bg);
   color:var(--ink);
   font-family:var(--body);
-  font-size:15px;
+  font-size:16px;
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
@@ -92,11 +112,15 @@ h3{font-size:1rem;font-weight:600}
 p{margin:0}
 a{color:var(--brand)}
 button{font:inherit}
-:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:4px}
+.ic{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .eyebrow{
   font-family:var(--display);font-size:.7rem;font-weight:600;
-  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2);
+  letter-spacing:.11em;text-transform:uppercase;color:var(--brand);
 }
 .muted{color:var(--ink-2)}
 .small{font-size:.83rem}
@@ -109,14 +133,24 @@ button{font:inherit}
 .req{color:var(--crit);font-weight:700}
 input[type=text],input[type=email],input[type=password],input[type=number],
 input[type=date],input[type=time],input[type=tel],select,textarea{
-  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
-  background:var(--surface);color:var(--ink);font:inherit;font-size:.92rem;
+  width:100%;min-height:var(--tap);padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:1rem;
+  transition:border-color .15s ease, box-shadow .15s ease;
 }
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
+input[type=checkbox]{min-width:20px;height:20px;accent-color:var(--brand);flex:none}
 textarea{resize:vertical;min-height:88px}
-input:invalid:not(:placeholder-shown){border-color:var(--crit)}
+[aria-invalid="true"]{border-color:var(--crit) !important;box-shadow:0 0 0 3px var(--crit-soft) !important}
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:50px}
+.ver-clave{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;
+  border:0;border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+.ver-clave:hover{color:var(--ink);background:var(--surface-2)}
+.ver-clave svg{width:20px;height:20px}
+.ver-clave[aria-pressed="true"]{color:var(--brand)}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:9px 18px;border-radius:7px;border:1px solid transparent;
+  min-height:var(--tap);padding:10px 20px;border-radius:8px;border:1px solid transparent;
   background:var(--brand);color:var(--on-brand);font-weight:600;font-size:.9rem;cursor:pointer;
   transition:filter .15s ease, background .15s ease;
 }
@@ -124,7 +158,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
 .btn.ghost{background:transparent;color:var(--brand);border-color:var(--line)}
 .btn.ghost:hover{background:var(--surface-2)}
-.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px}
+.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px;min-height:36px}
 .btn.plain:hover{color:var(--ink);background:var(--surface-2)}
 .btn.wide{width:100%}
 .row{display:flex;gap:12px;flex-wrap:wrap}
@@ -155,6 +189,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
   border:2px solid var(--brand);display:grid;place-items:center;
   font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--brand);
   letter-spacing:.02em;background:var(--brand-soft);
+  box-shadow:0 0 0 3px var(--accent-soft);
 }
 .brandline{display:flex;gap:14px;align-items:center;margin-bottom:22px}
 .brandline .t1{font-family:var(--display);font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
@@ -182,7 +217,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 
 /* ---------- shell de la aplicación ---------- */
 .shell{display:grid;grid-template-columns:238px 1fr;min-height:100%}
-@media (max-width:900px){.shell{grid-template-columns:1fr}}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}}
 .side{
   border-right:1px solid var(--line);background:var(--surface);
   padding:22px 16px;display:flex;flex-direction:column;gap:22px;
@@ -190,7 +225,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 }
 @media (max-width:900px){
   .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);
-    padding:14px 16px;gap:14px}
+    padding:10px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
 }
 .side .who{display:flex;gap:10px;align-items:center;min-width:0}
 .avatar{
@@ -200,10 +235,6 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 .who .n{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who .o{font-size:.74rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav.menu{display:flex;flex-direction:column;gap:2px}
-@media (max-width:900px){
-  nav.menu{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none}
-  nav.menu::-webkit-scrollbar{display:none}
-}
 nav.menu button{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;
   padding:9px 11px;border:0;border-radius:8px;background:transparent;
@@ -213,8 +244,26 @@ nav.menu button:hover{background:var(--surface-2);color:var(--ink)}
 nav.menu button[aria-current="page"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
 nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:900px){
+  /* El mismo menú, fijo abajo: las cinco secciones siempre al alcance del pulgar.
+     Va después de la regla base de los botones para poder cambiar su tamaño y ajuste. */
+  nav.menu{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--surface);
+    border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -6px 20px -14px rgba(21,33,44,.35)}
+  nav.menu button{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:6px 2px;
+    text-align:center;white-space:normal;font-size:.68rem;line-height:1.15;overflow-wrap:anywhere}
+  nav.menu svg{width:20px;height:20px}
+  html{scroll-padding-bottom:96px}
+}
 .side .foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
-@media (max-width:900px){.side .foot{display:none}}
+@media (max-width:900px){
+  .side .foot{margin:0;flex-direction:row;gap:4px}
+  .side .foot .who,.side .foot .opsbar{display:none}
+  .side .foot .btn{width:44px;min-height:44px;padding:0}
+  .side .foot .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+.side .foot .btn svg{width:18px;height:18px;flex:none}
 .opsbar{font-size:.7rem;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;
   padding-top:12px;border-top:1px solid var(--line)}
 .opsbar span{display:flex;align-items:center;gap:6px}
@@ -222,6 +271,15 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
 .main{padding:28px 24px 64px;min-width:0}
 @media (max-width:640px){.main{padding:20px 16px 56px}}
+@media (max-width:900px){
+  .main{padding-bottom:104px}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+.saltar{position:absolute;left:16px;top:-60px;z-index:70;background:var(--brand);color:var(--on-brand);
+  padding:10px 16px;border-radius:8px;font-weight:600;text-decoration:none}
+.saltar:focus{top:12px}
+.main:focus{outline:none}
+[data-page] h1:focus{outline:none}
 .main-in{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
 .page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
 .page-head p{color:var(--ink-2);max-width:58ch;margin-top:4px;font-size:.92rem}
@@ -230,7 +288,9 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 15px;
-  display:flex;flex-direction:column;gap:2px}
+  display:flex;flex-direction:column;gap:2px;font:inherit;color:inherit;text-align:left;cursor:pointer;
+  transition:border-color .15s ease, box-shadow .15s ease}
+.stat:hover{border-color:var(--brand);box-shadow:var(--shadow)}
 .stat .v{font-family:var(--display);font-size:1.75rem;font-weight:700;line-height:1;
   font-variant-numeric:tabular-nums}
 .stat .k{font-size:.76rem;color:var(--ink-2)}
@@ -243,6 +303,33 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
   border-radius:10px;padding:14px 16px;display:grid;
   grid-template-columns:1fr auto;gap:8px 16px;align-items:start;
 }
+.exp-der{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.exp .ver{min-height:36px;padding:6px 12px;font-size:.84rem}
+
+.atencion{border-left:4px solid var(--crit);display:flex;flex-direction:column;gap:12px}
+.atencion .at-h{display:flex;gap:10px;align-items:center;color:var(--crit)}
+.atencion .at-h svg{width:22px;height:22px;flex:none}
+.atencion .at-h h2{color:var(--ink)}
+.at-r{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;
+  padding-top:12px;border-top:1px solid var(--line)}
+.at-r .code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2)}
+.at-r .name{font-weight:600}
+
+dialog.detalle{border:0;border-radius:14px;padding:0;width:min(580px,calc(100vw - 32px));
+  max-height:calc(100dvh - 32px);background:var(--surface);color:var(--ink);
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.55)}
+dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
+.det-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:18px 20px;border-bottom:1px solid var(--line)}
+.det-h .code{font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
+.det-b{padding:18px 20px 22px;display:flex;flex-direction:column;gap:18px}
+.linea{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.linea li{font-size:.8rem;color:var(--ink-2);padding-top:10px;border-top:4px solid var(--surface-2)}
+.linea li[data-s="done"]{border-top-color:var(--ok);color:var(--ink)}
+.linea li[data-s="on"]{border-top-color:var(--brand);color:var(--ink);font-weight:600}
+.linea li[data-s="on"].crit{border-top-color:var(--crit)}
+.sigue{background:var(--surface-2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.sigue p{font-size:.9rem;color:var(--ink-2)}
 .exp.st-ok{border-left-color:var(--ok)} .exp.st-warn{border-left-color:var(--warn)}
 .exp.st-crit{border-left-color:var(--crit)} .exp.st-info{border-left-color:var(--brand)}
 .exp .code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);letter-spacing:.01em}
@@ -265,6 +352,12 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .stepper .s[data-state="on"] .num{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 .stepper .s[data-state="done"] .num{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
 .stepper .lbl{font-size:.8rem;color:var(--ink-2);font-weight:500}
+@media (max-width:640px){.stepper .s:not([data-state="on"]) .lbl{display:none}}
+.progreso{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}
+.progreso span{display:block;height:100%;width:25%;background:var(--brand);border-radius:inherit;transition:width .3s ease}
+.paso-de{font-size:.85rem;color:var(--ink-2);margin-top:6px;font-weight:500}
+.buscador input{padding-left:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23556676' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center}
 .stepper .s[data-state="on"] .lbl{color:var(--ink);font-weight:600}
 
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
@@ -342,9 +435,25 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .slot:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft)}
 .slot[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:500}
 .slot:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
+.atajos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);
+  color:var(--ink);font:inherit;font-size:.84rem;cursor:pointer}
+.chip:hover{border-color:var(--brand)}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:600}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.8rem;color:var(--ink-2);margin-top:10px}
+.leyenda span{display:inline-flex;align-items:center;gap:6px}
+.leyenda i{width:14px;height:14px;border-radius:4px;border:1px solid var(--line);background:var(--surface)}
+.leyenda i.ocup{opacity:.38;background:repeating-linear-gradient(135deg,var(--line) 0 2px,transparent 2px 5px)}
+.leyenda i.sel{background:var(--brand);border-color:var(--brand)}
 
 /* ---------- avisos ---------- */
-.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.85rem;align-items:flex-start}
+.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.9rem;align-items:flex-start}
+.notice .ni{width:18px;height:18px;flex:none;margin-top:2px}
+
+/* ---------- franja oficial ---------- */
+.franja{background:var(--franja);color:#fff;font-size:.8rem;border-bottom:3px solid var(--accent)}
+.franja-in{max-width:1040px;margin:0 auto;padding:6px 16px;display:flex;gap:8px;align-items:center}
+.franja svg{width:16px;height:16px;flex:none}
 .notice.ok{background:var(--ok-soft);color:var(--ok)}
 .notice.crit{background:var(--crit-soft);color:var(--crit)}
 .notice.info{background:var(--brand-soft);color:var(--brand)}
@@ -362,6 +471,20 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .copyable{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .copyable .v{font-family:var(--mono);font-size:.85rem;user-select:all}
 </style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 10"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+
+<div class="franja" role="note" aria-label="Sitio oficial">
+  <div class="franja-in">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-escudo"/></svg>
+    <span>Portal oficial del <b>Municipio de Panamá</b> · Dirección de Permisos y Cumplimiento</span>
+  </div>
+</div>
 
 <!-- =================== ACCESO =================== -->
 <div id="view-auth" class="auth">
@@ -400,9 +523,12 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         </div>
         <div class="field">
           <label for="li-pass">Contraseña <span class="req">*</span></label>
-          <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <div class="pass-wrap">
+            <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <button type="button" class="ver-clave" aria-controls="li-pass" aria-pressed="false" aria-label="Mostrar contraseña"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
         </div>
-        <div id="li-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+        <div id="li-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Iniciar sesión</button>
         <p class="small muted" style="text-align:center">
           ¿No tienes cuenta? <a href="#crear" id="go-signup">Créala aquí</a>
@@ -449,7 +575,10 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         <div class="row">
           <div class="field">
             <label for="su-pass">Contraseña <span class="req">*</span></label>
-            <input id="su-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+            <div class="pass-wrap">
+              <input id="su-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+              <button type="button" class="ver-clave" aria-controls="su-pass" aria-pressed="false" aria-label="Mostrar contraseña"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
           </div>
           <div class="field">
             <label for="su-pass2">Repetir contraseña <span class="req">*</span></label>
@@ -460,7 +589,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <input id="su-ok" type="checkbox" required style="margin-top:3px;width:auto">
           <span>Autorizo el tratamiento de mis datos conforme a la <b style="color:var(--ink)">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
         </label>
-        <div id="su-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+        <div id="su-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Crear cuenta y entrar</button>
         <p class="small muted" style="text-align:center">
           ¿Ya tienes cuenta? <a href="#entrar" id="go-login">Inicia sesión</a>
@@ -472,6 +601,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
 <!-- =================== APLICACIÓN =================== -->
 <div id="view-app" class="shell" hidden>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
   <aside class="side">
     <div class="brandline" style="margin:0;gap:10px">
       <div class="seal" style="width:38px;height:38px;font-size:.75rem" aria-hidden="true">MP</div>
@@ -502,8 +632,10 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <div class="o" id="u-org">—</div>
         </div>
       </div>
-      <button class="btn plain" id="btn-theme" style="justify-content:flex-start">Cambiar tema</button>
-      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">Cerrar sesión</button>
+      <button class="btn plain" id="btn-theme" aria-pressed="false" style="justify-content:flex-start">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span class="lbl">Tema oscuro</span></button>
+      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg><span class="lbl">Cerrar sesión</span></button>
       <div class="opsbar">
         <span><i class="dot-ok"></i>Antivirus documental activo</span>
         <span><i class="dot-ok"></i>Monitoreo de servicio en línea</span>
@@ -511,7 +643,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
     </div>
   </aside>
 
-  <main class="main">
+  <main class="main" id="contenido" tabindex="-1">
     <div class="main-in">
 
       <!-- ---------- INICIO ---------- -->
@@ -526,13 +658,18 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         </div>
 
         <div class="stats" style="margin-top:20px">
-          <div class="stat"><span class="v" id="k-total">0</span><span class="k">Expedientes</span></div>
-          <div class="stat s-warn"><span class="v" id="k-rev">0</span><span class="k">En revisión</span></div>
-          <div class="stat s-ok"><span class="v" id="k-apr">0</span><span class="k">Aprobados</span></div>
-          <div class="stat s-crit"><span class="v" id="k-sub">0</span><span class="k">Subsanación</span></div>
+          <button type="button" class="stat" data-filtro=""><span class="v" id="k-total">0</span><span class="k">Expedientes</span></button>
+          <button type="button" class="stat s-warn" data-filtro="En revisión"><span class="v" id="k-rev">0</span><span class="k">En revisión</span></button>
+          <button type="button" class="stat s-ok" data-filtro="Aprobado"><span class="v" id="k-apr">0</span><span class="k">Aprobados</span></button>
+          <button type="button" class="stat s-crit" data-filtro="Subsanación"><span class="v" id="k-sub">0</span><span class="k">Subsanación</span></button>
         </div>
 
         <div style="margin-top:22px">
+          <section class="card atencion" id="atencion" aria-labelledby="at-titulo" hidden style="margin-bottom:22px">
+            <div class="at-h"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alerta"/></svg>
+              <h2 id="at-titulo">Requiere tu atención</h2></div>
+            <div id="at-lista"></div>
+          </section>
           <h2 style="margin-bottom:10px">Movimiento reciente</h2>
           <div class="exp-list" id="recent"></div>
         </div>
@@ -554,6 +691,9 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <div class="s"><span class="num">3</span><span class="lbl">Documentos</span></div>
           <div class="s"><span class="num">4</span><span class="lbl">Revisión y envío</span></div>
         </div>
+        <div class="progreso" id="progreso" role="progressbar" aria-label="Avance de la solicitud"
+             aria-valuemin="1" aria-valuemax="4" aria-valuenow="1"><span></span></div>
+        <p class="paso-de" id="paso-de" aria-live="polite">Paso 1 de 4 · Tipo de permiso</p>
 
         <!-- Paso 1 -->
         <div class="card" data-step="1" style="margin-top:14px;display:flex;flex-direction:column;gap:16px">
@@ -561,6 +701,14 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <h2>¿Qué tipo de permiso necesitas?</h2>
             <p class="small muted" style="margin-top:4px">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
           </div>
+          <div class="field buscador">
+            <label for="q-tramite">Buscar un trámite</label>
+            <input id="q-tramite" type="search" autocomplete="off" placeholder="Ej. aceras, nocturno, chiva, plagas">
+            <span class="hint">Escribe una palabra o elige una categoría abajo.</span>
+          </div>
+          <div class="opt-list" id="q-res" hidden></div>
+          <p class="notice info" id="q-vacio" hidden>No encontramos trámites con esas palabras. Prueba con otra palabra o elige una categoría.</p>
+          <p class="sr" id="q-cuenta" aria-live="polite"></p>
           <div>
             <span class="eyebrow">1 · Categoría</span>
             <div class="cat-grid" id="cats" style="margin-top:8px"></div>
@@ -603,7 +751,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <div class="field">
               <label for="f-fecha">Día del acto <span class="req">*</span></label>
               <input id="f-fecha" type="date" required>
-              <span class="hint">Mínimo 15 días hábiles de antelación.</span>
+              <span class="hint">Mínimo 15 días hábiles a partir de hoy.</span>
             </div>
             <div class="field">
               <label for="f-hini">Hora de inicio <span class="req">*</span></label>
@@ -637,7 +785,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <span class="hint"><span id="motivo-n">0</span>/600 caracteres · mínimo 20.</span>
           </div>
 
-          <div id="s2-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div id="s2-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="1">Atrás</button>
             <button class="btn" type="submit">Continuar</button>
@@ -674,7 +822,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             </div>
           </div>
 
-          <div id="s3-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div id="s3-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="2">Atrás</button>
             <button class="btn" id="s3-next" disabled>Continuar</button>
@@ -688,6 +836,12 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <p class="small muted" style="margin-top:4px">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
           </div>
           <dl class="summary" id="sum"></dl>
+          <div class="actions" style="gap:6px">
+            <span class="small muted">¿Algo no está bien?</span>
+            <button class="btn plain" type="button" data-back="1">Cambiar permiso</button>
+            <button class="btn plain" type="button" data-back="2">Cambiar datos</button>
+            <button class="btn plain" type="button" data-back="3">Cambiar documento</button>
+          </div>
           <label style="display:flex;gap:9px;align-items:flex-start;font-size:.83rem;color:var(--ink-2)">
             <input id="s4-ok" type="checkbox" style="margin-top:3px;width:auto">
             <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b style="color:var(--ink)">Acuerdo Municipal N.° 130 de 2016</b>.</span>
@@ -700,7 +854,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
         <!-- Comprobante -->
         <div class="card" data-step="5" hidden style="margin-top:14px;flex-direction:column;gap:16px">
-          <div class="notice ok"><span>✓</span><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
+          <div class="notice ok"><svg class="ic ni" aria-hidden="true"><use href="#i-ok"/></svg><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
           <dl class="summary" id="receipt"></dl>
           <div class="actions">
             <button class="btn" data-nav="expedientes">Ver mis solicitudes</button>
@@ -783,15 +937,21 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <div class="field">
               <label for="c-fecha">Fecha <span class="req">*</span></label>
               <input id="c-fecha" type="date" required>
-              <span class="hint">Atención de lunes a viernes.</span>
+              <span class="hint">Atención en días hábiles (L–V).</span>
+              <div class="atajos" id="c-atajos" role="group" aria-label="Próximos días hábiles"></div>
             </div>
           </div>
           <div>
             <span class="eyebrow">Horarios disponibles</span>
             <div class="slots" id="slots" style="margin-top:8px"></div>
-            <p class="small muted" style="margin-top:8px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m. Los tachados ya están ocupados.</p>
+            <div class="leyenda" id="leyenda-slots">
+              <span><i aria-hidden="true"></i>Disponible</span>
+              <span><i class="ocup" aria-hidden="true"></i>Ocupado</span>
+              <span><i class="sel" aria-hidden="true"></i>Elegido</span>
+            </div>
+            <p class="small muted" style="margin-top:6px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m.</p>
           </div>
-          <div id="c-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div id="c-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:flex-end">
             <button class="btn" type="submit">Confirmar cita</button>
           </div>
@@ -848,8 +1008,8 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
               <label for="ct-msg">Mensaje <span class="req">*</span></label>
               <textarea id="ct-msg" required minlength="15" placeholder="Cuéntanos en qué podemos ayudarte."></textarea>
             </div>
-            <div id="ct-err" class="notice crit" hidden><span>⚠</span><span></span></div>
-            <div id="ct-ok" class="notice ok" hidden><span>✓</span><span></span></div>
+            <div id="ct-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
+            <div id="ct-ok" class="notice ok" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-ok"/></svg><span></span></div>
             <div class="actions" style="justify-content:flex-end">
               <button class="btn" type="submit">Enviar mensaje</button>
             </div>
@@ -885,6 +1045,17 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
     </div>
   </main>
+
+  <dialog class="detalle" id="detalle" aria-labelledby="det-titulo">
+    <div class="det-h">
+      <div style="min-width:0">
+        <div class="code" id="det-code">—</div>
+        <h2 id="det-titulo">—</h2>
+      </div>
+      <button type="button" class="btn plain" id="det-cerrar">Cerrar</button>
+    </div>
+    <div class="det-b" id="det-cuerpo"></div>
+  </dialog>
 </div>
 
 <script>
@@ -1059,11 +1230,36 @@ function toast(msg){
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
-function showErr(el, msg){
+function showErr(el, msg, campoId){
+  const zona = el.closest("form, .card") || document;
+  $$('[aria-invalid="true"]', zona).forEach(limpiarCampo);
   if (!msg){ el.hidden = true; return; }
   el.hidden = false; el.lastElementChild.textContent = msg;
-  el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  const campo = campoId && $("#" + campoId);
+  if (campo){
+    // El error queda unido al campo: se ve marcado, el lector de pantalla lee
+    // el mensaje y el foco llega justo donde hay que corregir.
+    campo.setAttribute("aria-invalid", "true");
+    campo.setAttribute("aria-describedby", el.id);
+    campo.focus();
+  } else {
+    el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
 }
+function limpiarCampo(c){
+  c.removeAttribute("aria-invalid");
+  if (/-err$/.test(c.getAttribute("aria-describedby") || "")) c.removeAttribute("aria-describedby");
+}
+["input", "change"].forEach(ev => document.addEventListener(ev, e => {
+  if (e.target instanceof Element && e.target.getAttribute("aria-invalid") === "true") limpiarCampo(e.target);
+}));
+document.addEventListener("click", e => {
+  const b = e.target.closest(".ver-clave"); if (!b) return;
+  const campo = $("#" + b.getAttribute("aria-controls"));
+  const ver = campo.type === "password";
+  campo.type = ver ? "text" : "password";
+  b.setAttribute("aria-pressed", String(ver));
+});
 function fechaLarga(iso){
   if (!iso) return "—";
   const [y,m,d] = iso.split("-").map(Number);
@@ -1071,9 +1267,13 @@ function fechaLarga(iso){
                  "agosto","septiembre","octubre","noviembre","diciembre"];
   return `${d} de ${meses[m-1]} de ${y}`;
 }
+// Fecha local (Panamá). toISOString() usa UTC: después de las 7 p. m. daba el día siguiente.
+function aISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function hoyISO(off = 0){
   const d = new Date(); d.setDate(d.getDate() + off);
-  return d.toISOString().slice(0,10);
+  return aISO(d);
 }
 function estadoClase(e){
   return { "Aprobado":"ok", "En revisión":"warn", "Subsanación":"crit", "Recibido":"info" }[e] || "info";
@@ -1087,12 +1287,18 @@ function nuevoExpediente(){
    4. TEMA
    ============================================================ */
 
-$("#btn-theme").addEventListener("click", () => {
+function temaOscuro(){
   const cur = document.documentElement.getAttribute("data-theme");
-  const oscuro = cur === "dark" ||
-    (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.setAttribute("data-theme", oscuro ? "light" : "dark");
+  return cur === "dark" || (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function pintarBotonTema(){ $("#btn-theme").setAttribute("aria-pressed", String(temaOscuro())); }
+$("#btn-theme").addEventListener("click", () => {
+  const nuevo = temaOscuro() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", nuevo);
+  try { localStorage.setItem("vum-tema", nuevo); } catch {}   // modo privado: sólo no se recuerda
+  pintarBotonTema();
 });
+pintarBotonTema();
 
 /* ============================================================
    5. AUTENTICACIÓN
@@ -1116,7 +1322,7 @@ $("#pane-login").addEventListener("submit", e => {
   e.preventDefault();
   const email = $("#li-email").value.trim().toLowerCase();
   const pass  = $("#li-pass").value;
-  if (!email || !pass) return showErr($("#li-err"), "Escribe tu correo y tu contraseña.");
+  if (!email || !pass) return showErr($("#li-err"), "Escribe tu correo y tu contraseña.", email ? "li-pass" : "li-email");
   const u = state.cuentas.find(c => c.email.toLowerCase() === email);
   if (!u || u.pass !== pass)
     return showErr($("#li-err"), "El correo o la contraseña no coinciden. Revisa e inténtalo de nuevo.");
@@ -1131,19 +1337,19 @@ $("#pane-signup").addEventListener("submit", e => {
   const campos = { nombre:v("su-nombre"), apellido:v("su-apellido"), edad:v("su-edad"),
                    cedula:v("su-cedula"), org:v("su-org"), email:v("su-email").toLowerCase() };
 
-  if (!campos.nombre || !campos.apellido) return showErr(err, "Escribe tu nombre y tu apellido.");
+  if (!campos.nombre || !campos.apellido) return showErr(err, "Escribe tu nombre y tu apellido.", campos.nombre ? "su-apellido" : "su-nombre");
   const edad = Number(campos.edad);
-  if (!edad || edad < 18) return showErr(err, "Debes tener al menos 18 años para tramitar un permiso.");
-  if (edad > 110) return showErr(err, "Revisa la edad ingresada.");
-  if (!campos.org) return showErr(err, "Indica el lugar donde colaboras, o escribe «Independiente».");
+  if (!edad || edad < 18) return showErr(err, "Debes tener al menos 18 años para tramitar un permiso.", "su-edad");
+  if (edad > 110) return showErr(err, "Revisa la edad ingresada.", "su-edad");
+  if (!campos.org) return showErr(err, "Indica el lugar donde colaboras, o escribe «Independiente».", "su-org");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(campos.email))
-    return showErr(err, "El correo electrónico no tiene un formato válido.");
+    return showErr(err, "El correo electrónico no tiene un formato válido.", "su-email");
   if (state.cuentas.some(c => c.email.toLowerCase() === campos.email))
-    return showErr(err, "Ya existe una cuenta con ese correo. Inicia sesión.");
+    return showErr(err, "Ya existe una cuenta con ese correo. Inicia sesión.", "su-email");
   const p1 = $("#su-pass").value, p2 = $("#su-pass2").value;
-  if (p1.length < 8) return showErr(err, "La contraseña debe tener al menos 8 caracteres.");
-  if (p1 !== p2) return showErr(err, "Las contraseñas no coinciden.");
-  if (!$("#su-ok").checked) return showErr(err, "Debes autorizar el tratamiento de tus datos para continuar.");
+  if (p1.length < 8) return showErr(err, "La contraseña debe tener al menos 8 caracteres.", "su-pass");
+  if (p1 !== p2) return showErr(err, "Las contraseñas no coinciden.", "su-pass2");
+  if (!$("#su-ok").checked) return showErr(err, "Debes autorizar el tratamiento de tus datos para continuar.", "su-ok");
 
   showErr(err, null);
   const cuenta = { ...campos, edad, pass:p1 };
@@ -1187,6 +1393,11 @@ function ir(pagina){
   $$("nav.menu button").forEach(b =>
     b.dataset.nav === pagina ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
   window.scrollTo({ top:0, behavior:"smooth" });
+  // Lectores de pantalla y teclado: el foco llega al título de la sección nueva.
+  const titulo = $(`[data-page="${pagina}"] h1`);
+  if (titulo){ titulo.tabIndex = -1; titulo.focus({ preventScroll:true }); }
+  const nombre = $(`nav.menu [data-nav="${pagina}"]`)?.textContent.trim();
+  document.title = `${nombre} · Ventanilla Única Municipal`;
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-nav]");
@@ -1204,7 +1415,10 @@ function tarjetaExpediente(x){
       <div class="name">${esc(x.permiso)}</div>
       <div class="meta"><i>${esc(x.lugar)}</i><i>${fechaLarga(x.fecha)}</i><i>${esc(x.etapa)}</i></div>
     </div>
-    <span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span>
+    <div class="exp-der">
+      <span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span>
+      <button type="button" class="btn ghost ver" data-exp="${esc(x.code)}" aria-label="Ver detalle de ${esc(x.code)}">Ver detalle</button>
+    </div>
   </article>`;
 }
 
@@ -1215,6 +1429,14 @@ function pintarTodo(){
   $("#k-apr").textContent   = e.filter(x => x.estado === "Aprobado").length;
   $("#k-sub").textContent   = e.filter(x => x.estado === "Subsanación").length;
   $("#recent").innerHTML    = e.slice(0, 3).map(tarjetaExpediente).join("");
+  const pendientes = e.filter(x => x.estado === "Subsanación");
+  $("#atencion").hidden = !pendientes.length;
+  $("#at-lista").innerHTML = pendientes.map(x =>
+    `<div class="at-r">
+       <div style="min-width:0"><div class="code">${esc(x.code)}</div>
+         <div class="name">${esc(x.permiso)}</div><p class="small muted">${esc(x.etapa)}</p></div>
+       <button type="button" class="btn" data-exp="${esc(x.code)}" aria-label="Resolver ${esc(x.code)}">Resolver</button>
+     </div>`).join("");
   filtrarExpedientes();
   pintarCitas();
   const sel = $("#c-exp");
@@ -1233,6 +1455,62 @@ function filtrarExpedientes(){
   $("#no-exp").hidden = r.length > 0;
 }
 $("#q").addEventListener("input", filtrarExpedientes);
+
+document.addEventListener("click", e => {
+  const s = e.target.closest(".stat[data-filtro]"); if (!s) return;
+  ir("expedientes");
+  $("#q").value = ""; $("#q-est").value = s.dataset.filtro;
+  filtrarExpedientes();
+});
+
+/* ---------- detalle del expediente ---------- */
+const QUE_SIGUE = {
+  "Recibido":    () => "Tu solicitud está en cola para asignarse a un revisor. Por ahora no tienes que hacer nada.",
+  "En revisión": () => "Un revisor de la Dirección está evaluando tu expediente. Si necesita algo, te escribirá a tu correo.",
+  "Subsanación": x  => `Falta algo para continuar: ${x.etapa}. Entrégalo en una cita y la revisión sigue desde donde quedó.`,
+  "Aprobado":    x  => `Tu permiso fue aprobado. ${x.etapa}.`,
+  "Rechazado":   x  => `La solicitud no fue aprobada. ${x.etapa}. Puedes escribirnos si tienes dudas.`,
+};
+
+function lineaDeTiempo(x){
+  const actual = x.estado === "Recibido" ? 0 : ["En revisión", "Subsanación"].includes(x.estado) ? 1 : 2;
+  const pasos = ["Recibido", x.estado === "Subsanación" ? "Subsanación pendiente" : "En revisión",
+                 ["Aprobado", "Rechazado"].includes(x.estado) ? x.estado : "Resolución"];
+  return `<ol class="linea" aria-label="Avance del trámite">${pasos.map((p, i) =>
+    `<li data-s="${i < actual ? "done" : i === actual ? "on" : ""}"
+         class="${i === actual && x.estado === "Subsanación" ? "crit" : ""}"
+         ${i === actual ? 'aria-current="step"' : ""}>${esc(p)}</li>`).join("")}</ol>`;
+}
+
+function abrirDetalle(code){
+  const x = state.expedientes.find(e => e.code === code); if (!x) return;
+  $("#det-code").textContent = x.code;
+  $("#det-titulo").textContent = x.permiso;
+  $("#det-cuerpo").innerHTML = `
+    <div><span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span></div>
+    ${lineaDeTiempo(x)}
+    <div class="sigue"><h3>Qué sigue</h3><p>${esc(QUE_SIGUE[x.estado]?.(x) ?? x.etapa)}</p></div>
+    <dl class="summary">
+      ${[["Lugar", x.lugar], ["Día del acto", fechaLarga(x.fecha)], ["Recibido el", fechaLarga(x.creado)],
+         ["Etapa actual", x.etapa]].map(([k, v]) =>
+        `<div class="r"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}
+      <div class="r"><dt>Huella del documento</dt><dd class="mono" style="font-size:.76rem">${esc(x.hash)}</dd></div>
+    </dl>
+    ${x.estado === "Subsanación"
+      ? `<div class="actions"><button type="button" class="btn" id="det-cita">Agendar cita para subsanar</button></div>` : ""}`;
+  $("#det-cita")?.addEventListener("click", () => {
+    $("#detalle").close();
+    ir("citas");
+    $("#c-motivo").value = "Subsanación de expediente";
+    $("#c-exp").value = `${x.code} — ${x.permiso}`;
+  });
+  $("#detalle").showModal();                 // modal nativo: atrapa el foco y Escape lo cierra
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-exp]"); if (b) abrirDetalle(b.dataset.exp);
+});
+$("#det-cerrar").addEventListener("click", () => $("#detalle").close());
 $("#q-est").addEventListener("change", filtrarExpedientes);
 
 /* ============================================================
@@ -1255,11 +1533,12 @@ $("#cats").addEventListener("click", e => {
   $("#perm-wrap").hidden = false;
   $("#req-wrap").hidden = true;
   $("#s1-next").disabled = true;
-  $("#perms").innerHTML = CATALOGO[state.sel.cat].items.map(p =>
-    `<button type="button" class="opt" data-perm="${esc(p.id)}" aria-pressed="false">
+  $("#perms").innerHTML = CATALOGO[state.sel.cat].items.map((p, i) =>
+    `<button type="button" class="opt" data-perm="${esc(p.id)}" aria-pressed="false"
+             aria-label="${esc(p.n)}" aria-describedby="od-${i} dd-${i}">
        <span class="radio"></span>
-       <span><span class="on">${esc(p.n)}</span><span class="od">${p.req.length} documentos requeridos</span></span>
-       <span class="days">${p.d} días háb.</span>
+       <span><span class="on">${esc(p.n)}</span><span class="od" id="od-${i}">${p.req.length} documentos requeridos</span></span>
+       <span class="days" id="dd-${i}">${p.d} días háb.</span>
      </button>`).join("");
 });
 
@@ -1270,7 +1549,6 @@ $("#perms").addEventListener("click", e => {
   $("#s1-next").disabled = false;
   const html = requisitosHTML(state.sel.perm);
   $("#req-wrap").innerHTML = html; $("#req-wrap").hidden = false;
-  $("#req-wrap-3").innerHTML = html;
 });
 
 function requisitosHTML(p){
@@ -1281,6 +1559,35 @@ function requisitosHTML(p){
       Plazo estimado de resolución: <b>${p.d} días hábiles</b>.</p>
   </div>`;
 }
+
+const sinTildes = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+$("#q-tramite").addEventListener("input", e => {
+  const q = sinTildes(e.target.value.trim());
+  const res = $("#q-res"), vacio = $("#q-vacio");
+  if (q.length < 2){ res.hidden = vacio.hidden = true; $("#q-cuenta").textContent = ""; return; }
+  const palabras = q.split(/\s+/);
+  const hallados = ALL_PERMS
+    .filter(p => { const t = sinTildes(`${p.n} ${p.cat}`); return palabras.every(w => t.includes(w)); })
+    .slice(0, 8);
+  res.innerHTML = hallados.map((p, i) =>
+    `<button type="button" class="opt" data-buscar="${esc(p.id)}" aria-label="${esc(p.n)}" aria-describedby="qd-${i}">
+       <span class="radio"></span>
+       <span><span class="on">${esc(p.n)}</span><span class="od" id="qd-${i}">${esc(p.cat)} · ${p.d} días háb.</span></span>
+     </button>`).join("");
+  res.hidden = !hallados.length;
+  vacio.hidden = hallados.length > 0;
+  $("#q-cuenta").textContent = hallados.length ? `${hallados.length} trámites encontrados` : "Sin resultados";
+});
+
+$("#q-res").addEventListener("click", e => {
+  const b = e.target.closest("[data-buscar]"); if (!b) return;
+  const p = ALL_PERMS.find(x => x.id === b.dataset.buscar);
+  $(`.cat[data-cat="${CATALOGO.findIndex(c => c.cat === p.cat)}"]`).click();   // pinta su categoría
+  $(`#perms [data-perm="${CSS.escape(p.id)}"]`).click();                      // y marca el trámite
+  $("#q-tramite").value = ""; $("#q-res").hidden = true; $("#q-cuenta").textContent = "";
+  $("#req-wrap").scrollIntoView({ behavior:"smooth", block:"nearest" });
+});
 
 $("#s1-next").addEventListener("click", () => {
   const p = state.sel.perm;
@@ -1317,26 +1624,27 @@ $('[data-step="2"]').addEventListener("submit", e => {
     fecha:V("f-fecha"), hIni:V("f-hini"), hFin:V("f-hfin"),
     aforo:Number(V("f-aforo")), resp:V("f-resp"), tel:V("f-tel"), motivo:V("f-motivo")
   };
-  if (!d.corregimiento) return showErr(err, "Selecciona el corregimiento donde se realizará el acto.");
-  if (!d.tipoActo)      return showErr(err, "Selecciona el tipo de acto.");
-  if (d.lugar.length < 5) return showErr(err, "Describe el lugar exacto con un poco más de detalle.");
-  if (!d.fecha)         return showErr(err, "Indica el día del acto.");
+  if (!d.corregimiento) return showErr(err, "Selecciona el corregimiento donde se realizará el acto.", "f-corregimiento");
+  if (!d.tipoActo)      return showErr(err, "Selecciona el tipo de acto.", "f-tipoacto");
+  if (d.lugar.length < 5) return showErr(err, "Describe el lugar exacto con un poco más de detalle.", "f-lugar");
+  if (!d.fecha)         return showErr(err, "Indica el día del acto.", "f-fecha");
   if (d.fecha < hoyISO(15))
-    return showErr(err, "La fecha debe tener al menos 15 días hábiles de antelación.");
-  if (!d.hIni || !d.hFin) return showErr(err, "Indica la hora de inicio y la de cierre.");
+    return showErr(err, "La fecha debe tener al menos 15 días hábiles de antelación.", "f-fecha");
+  if (!d.hIni || !d.hFin) return showErr(err, "Indica la hora de inicio y la de cierre.", d.hIni ? "f-hfin" : "f-hini");
   if (d.hFin <= d.hIni && d.hFin > "06:00")
-    return showErr(err, "La hora de cierre debe ser posterior a la de inicio.");
+    return showErr(err, "La hora de cierre debe ser posterior a la de inicio.", "f-hfin");
   const p = state.sel.perm;
-  if (!d.aforo || d.aforo < 1) return showErr(err, "Indica el aforo estimado.");
+  if (!d.aforo || d.aforo < 1) return showErr(err, "Indica el aforo estimado.", "f-aforo");
   if (p.aforo && (d.aforo < p.aforo[0] || d.aforo > p.aforo[1]))
-    return showErr(err, `Para «${p.n}» el aforo debe estar entre ${p.aforo[0]} y ${p.aforo[1].toLocaleString("es-PA")} personas. Cambia el tipo de permiso o corrige el aforo.`);
-  if (!d.resp)  return showErr(err, "Indica quién será el responsable en sitio.");
+    return showErr(err, `Para «${p.n}» el aforo debe estar entre ${p.aforo[0]} y ${p.aforo[1].toLocaleString("es-PA")} personas. Cambia el tipo de permiso o corrige el aforo.`, "f-aforo");
+  if (!d.resp)  return showErr(err, "Indica quién será el responsable en sitio.", "f-resp");
   if (!/[0-9]{7,}/.test(d.tel.replace(/[^0-9]/g,"")))
-    return showErr(err, "Escribe un teléfono de contacto válido, por ejemplo +507 6000-0000.");
-  if (d.motivo.length < 20) return showErr(err, "El motivo debe tener al menos 20 caracteres.");
+    return showErr(err, "Escribe un teléfono de contacto válido, por ejemplo +507 6000-0000.", "f-tel");
+  if (d.motivo.length < 20) return showErr(err, "El motivo debe tener al menos 20 caracteres.", "f-motivo");
 
   showErr(err, null);
   state.sel.datos = d;
+  $("#req-wrap-3").innerHTML = requisitosHTML(state.sel.perm);
   paso(3);
 });
 
@@ -1373,6 +1681,19 @@ async function sha256(buf){
 }
 
 async function verificar(file){
+  try { await verificarPasos(file); }
+  catch {
+    // El archivo cambió o desapareció del disco mientras se leía (carpeta
+    // sincronizada, memoria USB retirada…): se rechaza en vez de quedar en «Verificando».
+    const c = $('.chk[data-s="run"]')?.dataset.c || "fmt";
+    marcar(c, "bad", "No se pudo leer");
+    $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
+    showErr($("#s3-err"), "No pudimos leer el archivo. Vuelve a seleccionarlo.");
+    fileIn.value = "";
+  }
+}
+
+async function verificarPasos(file){
   showErr($("#s3-err"), null);
   state.sel.doc = null;
   $("#s3-next").disabled = true;
@@ -1381,8 +1702,8 @@ async function verificar(file){
   $("#scan-pill").className = "pill info"; $("#scan-pill").textContent = "Verificando";
   ["fmt","size","av","hash","log"].forEach(c => marcar(c, "wait", ""));
 
-  const fallar = (c, msg) => {
-    marcar(c, "bad", msg);
+  const fallar = (c, msg, corto) => {
+    marcar(c, "bad", corto);
     $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
     showErr($("#s3-err"), msg);
     fileIn.value = "";
@@ -1394,15 +1715,15 @@ async function verificar(file){
   const firma = String.fromCharCode(...cab);
   const extOK = /\.pdf$/i.test(file.name);
   if (!extOK || firma !== "%PDF-")
-    return fallar("fmt", "El archivo no es un PDF válido. Sube un documento con extensión .pdf.");
+    return fallar("fmt", "El archivo no es un PDF válido. Sube un documento con extensión .pdf.", "No es un PDF");
   marcar("fmt","ok","%PDF-");
 
   // 2 · Tamaño
   marcar("size","run"); await espera(240);
   const mb = file.size / 1048576;
   if (mb > MAX_MB)
-    return fallar("size", `El archivo pesa ${mb.toFixed(1)} MB y el límite es ${MAX_MB} MB. Comprime el PDF e inténtalo de nuevo.`);
-  if (file.size === 0) return fallar("size", "El archivo está vacío.");
+    return fallar("size", `El archivo pesa ${mb.toFixed(1)} MB y el límite es ${MAX_MB} MB. Comprime el PDF e inténtalo de nuevo.`, "Supera 10 MB");
+  if (file.size === 0) return fallar("size", "El archivo está vacío.", "Vacío");
   marcar("size","ok", `${mb.toFixed(2)} MB`);
 
   // 3 · Antivirus. En producción este paso llama a POST /api/documentos/escanear,
@@ -1411,7 +1732,7 @@ async function verificar(file){
   marcar("av","run"); await espera(1100);
   const sospechoso = /eicar|virus|malware|test-?infected/i.test(file.name);
   if (sospechoso)
-    return fallar("av", "ClamAV detectó una amenaza en el archivo (Eicar-Test-Signature). El documento fue puesto en cuarentena y no se adjuntó al expediente.");
+    return fallar("av", "ClamAV detectó una amenaza en el archivo (Eicar-Test-Signature). El documento fue puesto en cuarentena y no se adjuntó al expediente.", "Bloqueado");
   marcar("av","ok","Sin amenazas");
 
   // 4 · Huella de integridad, calculada realmente sobre el contenido del archivo
@@ -1478,6 +1799,7 @@ $("#new-again").addEventListener("click", reiniciarAsistente);
 
 function reiniciarAsistente(){
   state.sel = { cat:null, perm:null, datos:null, doc:null };
+  $("#q-tramite").value = ""; $("#q-res").hidden = $("#q-vacio").hidden = true;
   $$(".cat").forEach(x => x.setAttribute("aria-pressed","false"));
   $("#perm-wrap").hidden = true; $("#req-wrap").hidden = true;
   $("#s1-next").disabled = true; $("#s3-next").disabled = true; $("#s4-send").disabled = true;
@@ -1501,6 +1823,12 @@ function paso(n){
     else s.querySelector(".num").textContent = String(i + 1);
   });
   $("#stepper").hidden = n === 5;
+  const nombres = ["Tipo de permiso", "Datos del acto", "Documentos", "Revisión y envío"];
+  const actual = Math.min(n, 4);
+  $("#paso-de").textContent = `Paso ${actual} de 4 · ${nombres[actual - 1]}`;
+  $("#progreso").setAttribute("aria-valuenow", String(actual));
+  $("#progreso span").style.width = `${actual * 25}%`;
+  $("#paso-de").hidden = $("#progreso").hidden = n === 5;
   $(`[data-step="${n}"]`).scrollIntoView({ behavior:"smooth", block:"start" });
 }
 $$("[data-back]").forEach(b => b.addEventListener("click", () => paso(Number(b.dataset.back))));
@@ -1527,24 +1855,43 @@ function pintarSlots(){
     return `<button type="button" class="slot" data-h="${h}" aria-pressed="false" ${ocupado ? "disabled" : ""}>${h}</button>`;
   }).join("");
 }
-$("#c-fecha").addEventListener("change", pintarSlots);
+const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+function pintarAtajos(){
+  const elegida = $("#c-fecha").value, dias = [];
+  for (const d = new Date(); dias.length < 5; ){
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() % 6) dias.push(new Date(d));            // ni domingo (0) ni sábado (6)
+  }
+  $("#c-atajos").innerHTML = dias.map(d => {
+    const iso = aISO(d);
+    return `<button type="button" class="chip" data-fecha="${iso}" aria-pressed="${iso === elegida}"
+              aria-label="${DIAS[d.getDay()]} ${fechaLarga(iso)}">${DIAS[d.getDay()]} ${d.getDate()}</button>`;
+  }).join("");
+}
+$("#c-atajos").addEventListener("click", e => {
+  const b = e.target.closest("[data-fecha]"); if (!b) return;
+  $("#c-fecha").value = b.dataset.fecha;
+  pintarSlots(); pintarAtajos();
+});
+$("#c-fecha").addEventListener("change", () => { pintarSlots(); pintarAtajos(); });
 $("#slots").addEventListener("click", e => {
   const b = e.target.closest(".slot"); if (!b || b.disabled) return;
   $$(".slot").forEach(x => x.setAttribute("aria-pressed", x === b));
   horaSel = b.dataset.h;
 });
 pintarSlots();
+pintarAtajos();
 
 $("#cita-form").addEventListener("submit", e => {
   e.preventDefault();
   const err = $("#c-err");
   const sede = $("#c-sede").value, motivo = $("#c-motivo").value, fecha = $("#c-fecha").value;
-  if (!sede)   return showErr(err, "Selecciona la sede a la que asistirás.");
-  if (!motivo) return showErr(err, "Indica el motivo de la cita.");
-  if (!fecha)  return showErr(err, "Selecciona la fecha de la cita.");
+  if (!sede)   return showErr(err, "Selecciona la sede a la que asistirás.", "c-sede");
+  if (!motivo) return showErr(err, "Indica el motivo de la cita.", "c-motivo");
+  if (!fecha)  return showErr(err, "Selecciona la fecha de la cita.", "c-fecha");
   const dia = new Date(fecha + "T12:00:00").getDay();
   if (dia === 0 || dia === 6)
-    return showErr(err, "La atención presencial es de lunes a viernes. Elige otro día.");
+    return showErr(err, "La atención presencial es de lunes a viernes. Elige otro día.", "c-fecha");
   if (!horaSel) return showErr(err, "Elige uno de los horarios disponibles.");
 
   showErr(err, null);
@@ -1552,7 +1899,7 @@ $("#cita-form").addEventListener("submit", e => {
   state.citas.unshift({ turno, sede, motivo, fecha, hora:horaSel, exp:$("#c-exp").value });
   pintarCitas(); pintarSlots();
   $("#c-sede").value = ""; $("#c-motivo").value = ""; $("#c-exp").value = "";
-  toast(`Cita ${turno} confirmada`);
+  toast(`Cita ${turno} reservada`);
 });
 
 function pintarCitas(){
@@ -1577,11 +1924,11 @@ $("#ct-form").addEventListener("submit", e => {
   const err = $("#ct-err"), ok = $("#ct-ok");
   ok.hidden = true;
   const V = id => $("#" + id).value.trim();
-  if (!V("ct-nombre")) return showErr(err, "Escribe tu nombre completo.");
+  if (!V("ct-nombre")) return showErr(err, "Escribe tu nombre completo.", "ct-nombre");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(V("ct-email")))
-    return showErr(err, "El correo electrónico no tiene un formato válido.");
-  if (!V("ct-tema")) return showErr(err, "Selecciona el tema de tu mensaje.");
-  if (V("ct-msg").length < 15) return showErr(err, "Cuéntanos un poco más; el mensaje es muy corto.");
+    return showErr(err, "El correo electrónico no tiene un formato válido.", "ct-email");
+  if (!V("ct-tema")) return showErr(err, "Selecciona el tema de tu mensaje.", "ct-tema");
+  if (V("ct-msg").length < 15) return showErr(err, "Cuéntanos un poco más; el mensaje es muy corto.", "ct-msg");
   showErr(err, null);
   const ticket = "MSG-" + Math.floor(100000 + Math.random() * 899999);
   ok.hidden = false;
@@ -1604,3 +1951,5 @@ document.addEventListener("click", async e => {
    ============================================================ */
 mostrarPanel("login");
 </script>
+</body>
+</html>
