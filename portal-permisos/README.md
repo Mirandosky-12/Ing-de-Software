@@ -80,11 +80,23 @@ La primera vez ClamAV tarda unos 2 minutos en bajar su base de firmas:
 
 ### 3. La API
 
-```bash
+Necesita Python 3.12 o 3.13; las versiones fijadas todavía no tienen paquetes para 3.14.
+
+```powershell
 cd backend
-pip install -r requirements.txt
+py -3.13 -m venv .venv                 # Linux/macOS: python3.13 -m venv .venv
+.venv\Scripts\activate                 # Linux/macOS: source .venv/bin/activate
+pip install -r requirements-dev.txt
+
+# Clave que cifra la cédula en la base. Guárdala: sin ella esos datos no se leen.
+$env:CLAVE_CIFRADO = python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 uvicorn main:app --reload --port 8000
 ```
+
+En desarrollo los datos quedan en `backend/mupa.db` (SQLite) y los PDF en
+`backend/almacen/`. Las tablas y el catálogo se crean solos al arrancar. Si
+cambias el esquema, borra `mupa.db`: todavía no hay migraciones que alteren
+tablas existentes.
 
 Documentación interactiva en http://localhost:8000/docs
 Salud del servicio en http://localhost:8000/salud
@@ -194,6 +206,10 @@ alguna de esas falla, el despliegue no sale.
 
 ```bash
 # backend
+DATABASE_URL=sqlite:///./mupa.db  # o DATABASE_URL_FILE=<archivo con la URL> (Docker)
+CLAVE_CIFRADO=...                 # obligatoria; o CLAVE_CIFRADO_FILE=<archivo>
+ALMACEN_DIR=./almacen             # dónde se guardan los PDF verificados
+SESION_HORAS=8                    # duración de una sesión
 CLAMAV_HOST=127.0.0.1
 CLAMAV_PORT=3310
 CLAMAV_TIMEOUT=30
