@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="Portal oficial para solicitar permisos ante la Dirección de Permisos y Cumplimiento del Municipio de Panamá.">
 <title>Ventanilla Única Municipal</title>
+<script>try{var t=localStorage.getItem("vum-tema");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -217,7 +218,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 }
 @media (max-width:900px){
   .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);
-    padding:14px 16px;gap:14px}
+    padding:10px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
 }
 .side .who{display:flex;gap:10px;align-items:center;min-width:0}
 .avatar{
@@ -227,11 +228,6 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 .who .n{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who .o{font-size:.74rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav.menu{display:flex;flex-direction:column;gap:2px}
-@media (max-width:900px){
-  nav.menu{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none}
-  nav.menu button{width:auto;flex:none}
-  nav.menu::-webkit-scrollbar{display:none}
-}
 nav.menu button{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;
   padding:9px 11px;border:0;border-radius:8px;background:transparent;
@@ -241,8 +237,26 @@ nav.menu button:hover{background:var(--surface-2);color:var(--ink)}
 nav.menu button[aria-current="page"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
 nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:900px){
+  /* El mismo menú, fijo abajo: las cinco secciones siempre al alcance del pulgar.
+     Va después de la regla base de los botones para poder cambiar su tamaño y ajuste. */
+  nav.menu{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--surface);
+    border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -6px 20px -14px rgba(21,33,44,.35)}
+  nav.menu button{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:6px 2px;
+    text-align:center;white-space:normal;font-size:.68rem;line-height:1.15;overflow-wrap:anywhere}
+  nav.menu svg{width:20px;height:20px}
+  html{scroll-padding-bottom:96px}
+}
 .side .foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
-@media (max-width:900px){.side .foot{display:none}}
+@media (max-width:900px){
+  .side .foot{margin:0;flex-direction:row;gap:4px}
+  .side .foot .who,.side .foot .opsbar{display:none}
+  .side .foot .btn{width:44px;min-height:44px;padding:0}
+  .side .foot .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+.side .foot .btn svg{width:18px;height:18px;flex:none}
 .opsbar{font-size:.7rem;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;
   padding-top:12px;border-top:1px solid var(--line)}
 .opsbar span{display:flex;align-items:center;gap:6px}
@@ -250,6 +264,15 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
 .main{padding:28px 24px 64px;min-width:0}
 @media (max-width:640px){.main{padding:20px 16px 56px}}
+@media (max-width:900px){
+  .main{padding-bottom:104px}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+.saltar{position:absolute;left:16px;top:-60px;z-index:70;background:var(--brand);color:var(--on-brand);
+  padding:10px 16px;border-radius:8px;font-weight:600;text-decoration:none}
+.saltar:focus{top:12px}
+.main:focus{outline:none}
+[data-page] h1:focus{outline:none}
 .main-in{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
 .page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
 .page-head p{color:var(--ink-2);max-width:58ch;margin-top:4px;font-size:.92rem}
@@ -520,6 +543,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
 <!-- =================== APLICACIÓN =================== -->
 <div id="view-app" class="shell" hidden>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
   <aside class="side">
     <div class="brandline" style="margin:0;gap:10px">
       <div class="seal" style="width:38px;height:38px;font-size:.75rem" aria-hidden="true">MP</div>
@@ -550,8 +574,10 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <div class="o" id="u-org">—</div>
         </div>
       </div>
-      <button class="btn plain" id="btn-theme" style="justify-content:flex-start">Cambiar tema</button>
-      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">Cerrar sesión</button>
+      <button class="btn plain" id="btn-theme" aria-pressed="false" style="justify-content:flex-start">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span class="lbl">Tema oscuro</span></button>
+      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg><span class="lbl">Cerrar sesión</span></button>
       <div class="opsbar">
         <span><i class="dot-ok"></i>Antivirus documental activo</span>
         <span><i class="dot-ok"></i>Monitoreo de servicio en línea</span>
@@ -559,7 +585,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
     </div>
   </aside>
 
-  <main class="main">
+  <main class="main" id="contenido" tabindex="-1">
     <div class="main-in">
 
       <!-- ---------- INICIO ---------- -->
@@ -1135,12 +1161,18 @@ function nuevoExpediente(){
    4. TEMA
    ============================================================ */
 
-$("#btn-theme").addEventListener("click", () => {
+function temaOscuro(){
   const cur = document.documentElement.getAttribute("data-theme");
-  const oscuro = cur === "dark" ||
-    (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.setAttribute("data-theme", oscuro ? "light" : "dark");
+  return cur === "dark" || (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function pintarBotonTema(){ $("#btn-theme").setAttribute("aria-pressed", String(temaOscuro())); }
+$("#btn-theme").addEventListener("click", () => {
+  const nuevo = temaOscuro() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", nuevo);
+  try { localStorage.setItem("vum-tema", nuevo); } catch {}   // modo privado: sólo no se recuerda
+  pintarBotonTema();
 });
+pintarBotonTema();
 
 /* ============================================================
    5. AUTENTICACIÓN
@@ -1235,6 +1267,11 @@ function ir(pagina){
   $$("nav.menu button").forEach(b =>
     b.dataset.nav === pagina ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
   window.scrollTo({ top:0, behavior:"smooth" });
+  // Lectores de pantalla y teclado: el foco llega al título de la sección nueva.
+  const titulo = $(`[data-page="${pagina}"] h1`);
+  if (titulo){ titulo.tabIndex = -1; titulo.focus({ preventScroll:true }); }
+  const nombre = $(`nav.menu [data-nav="${pagina}"]`)?.textContent.trim();
+  document.title = `${nombre} · Ventanilla Única Municipal`;
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-nav]");
