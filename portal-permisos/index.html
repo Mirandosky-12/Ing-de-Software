@@ -1,3 +1,10 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Portal oficial para solicitar permisos ante la Dirección de Permisos y Cumplimiento del Municipio de Panamá.">
 <title>Ventanilla Única Municipal</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -77,7 +84,13 @@
 }
 
 *{box-sizing:border-box}
+/* `hidden` debe ganar siempre. Antes .shell, .notice y los estilos en línea de
+   los pasos ponían su propio display y dejaban visible lo que debía ocultarse:
+   el panel aparecía bajo el login y los pasos del asistente se apilaban. */
+[hidden]{display:none !important}
+html{height:100%}
 body{
+  margin:0;min-height:100%;
   background:var(--bg);
   color:var(--ink);
   font-family:var(--body);
@@ -182,7 +195,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 
 /* ---------- shell de la aplicación ---------- */
 .shell{display:grid;grid-template-columns:238px 1fr;min-height:100%}
-@media (max-width:900px){.shell{grid-template-columns:1fr}}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}}
 .side{
   border-right:1px solid var(--line);background:var(--surface);
   padding:22px 16px;display:flex;flex-direction:column;gap:22px;
@@ -202,6 +215,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 nav.menu{display:flex;flex-direction:column;gap:2px}
 @media (max-width:900px){
   nav.menu{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none}
+  nav.menu button{width:auto;flex:none}
   nav.menu::-webkit-scrollbar{display:none}
 }
 nav.menu button{
@@ -362,6 +376,8 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .copyable{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .copyable .v{font-family:var(--mono);font-size:.85rem;user-select:all}
 </style>
+</head>
+<body>
 
 <!-- =================== ACCESO =================== -->
 <div id="view-auth" class="auth">
@@ -603,7 +619,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <div class="field">
               <label for="f-fecha">Día del acto <span class="req">*</span></label>
               <input id="f-fecha" type="date" required>
-              <span class="hint">Mínimo 15 días hábiles de antelación.</span>
+              <span class="hint">Mínimo 15 días hábiles a partir de hoy.</span>
             </div>
             <div class="field">
               <label for="f-hini">Hora de inicio <span class="req">*</span></label>
@@ -783,7 +799,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <div class="field">
               <label for="c-fecha">Fecha <span class="req">*</span></label>
               <input id="c-fecha" type="date" required>
-              <span class="hint">Atención de lunes a viernes.</span>
+              <span class="hint">Atención en días hábiles (L–V).</span>
             </div>
           </div>
           <div>
@@ -1255,11 +1271,12 @@ $("#cats").addEventListener("click", e => {
   $("#perm-wrap").hidden = false;
   $("#req-wrap").hidden = true;
   $("#s1-next").disabled = true;
-  $("#perms").innerHTML = CATALOGO[state.sel.cat].items.map(p =>
-    `<button type="button" class="opt" data-perm="${esc(p.id)}" aria-pressed="false">
+  $("#perms").innerHTML = CATALOGO[state.sel.cat].items.map((p, i) =>
+    `<button type="button" class="opt" data-perm="${esc(p.id)}" aria-pressed="false"
+             aria-label="${esc(p.n)}" aria-describedby="od-${i} dd-${i}">
        <span class="radio"></span>
-       <span><span class="on">${esc(p.n)}</span><span class="od">${p.req.length} documentos requeridos</span></span>
-       <span class="days">${p.d} días háb.</span>
+       <span><span class="on">${esc(p.n)}</span><span class="od" id="od-${i}">${p.req.length} documentos requeridos</span></span>
+       <span class="days" id="dd-${i}">${p.d} días háb.</span>
      </button>`).join("");
 });
 
@@ -1270,7 +1287,6 @@ $("#perms").addEventListener("click", e => {
   $("#s1-next").disabled = false;
   const html = requisitosHTML(state.sel.perm);
   $("#req-wrap").innerHTML = html; $("#req-wrap").hidden = false;
-  $("#req-wrap-3").innerHTML = html;
 });
 
 function requisitosHTML(p){
@@ -1337,6 +1353,7 @@ $('[data-step="2"]').addEventListener("submit", e => {
 
   showErr(err, null);
   state.sel.datos = d;
+  $("#req-wrap-3").innerHTML = requisitosHTML(state.sel.perm);
   paso(3);
 });
 
@@ -1373,6 +1390,19 @@ async function sha256(buf){
 }
 
 async function verificar(file){
+  try { await verificarPasos(file); }
+  catch {
+    // El archivo cambió o desapareció del disco mientras se leía (carpeta
+    // sincronizada, memoria USB retirada…): se rechaza en vez de quedar en «Verificando».
+    const c = $('.chk[data-s="run"]')?.dataset.c || "fmt";
+    marcar(c, "bad", "No se pudo leer");
+    $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
+    showErr($("#s3-err"), "No pudimos leer el archivo. Vuelve a seleccionarlo.");
+    fileIn.value = "";
+  }
+}
+
+async function verificarPasos(file){
   showErr($("#s3-err"), null);
   state.sel.doc = null;
   $("#s3-next").disabled = true;
@@ -1381,8 +1411,8 @@ async function verificar(file){
   $("#scan-pill").className = "pill info"; $("#scan-pill").textContent = "Verificando";
   ["fmt","size","av","hash","log"].forEach(c => marcar(c, "wait", ""));
 
-  const fallar = (c, msg) => {
-    marcar(c, "bad", msg);
+  const fallar = (c, msg, corto) => {
+    marcar(c, "bad", corto);
     $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
     showErr($("#s3-err"), msg);
     fileIn.value = "";
@@ -1394,15 +1424,15 @@ async function verificar(file){
   const firma = String.fromCharCode(...cab);
   const extOK = /\.pdf$/i.test(file.name);
   if (!extOK || firma !== "%PDF-")
-    return fallar("fmt", "El archivo no es un PDF válido. Sube un documento con extensión .pdf.");
+    return fallar("fmt", "El archivo no es un PDF válido. Sube un documento con extensión .pdf.", "No es un PDF");
   marcar("fmt","ok","%PDF-");
 
   // 2 · Tamaño
   marcar("size","run"); await espera(240);
   const mb = file.size / 1048576;
   if (mb > MAX_MB)
-    return fallar("size", `El archivo pesa ${mb.toFixed(1)} MB y el límite es ${MAX_MB} MB. Comprime el PDF e inténtalo de nuevo.`);
-  if (file.size === 0) return fallar("size", "El archivo está vacío.");
+    return fallar("size", `El archivo pesa ${mb.toFixed(1)} MB y el límite es ${MAX_MB} MB. Comprime el PDF e inténtalo de nuevo.`, "Supera 10 MB");
+  if (file.size === 0) return fallar("size", "El archivo está vacío.", "Vacío");
   marcar("size","ok", `${mb.toFixed(2)} MB`);
 
   // 3 · Antivirus. En producción este paso llama a POST /api/documentos/escanear,
@@ -1411,7 +1441,7 @@ async function verificar(file){
   marcar("av","run"); await espera(1100);
   const sospechoso = /eicar|virus|malware|test-?infected/i.test(file.name);
   if (sospechoso)
-    return fallar("av", "ClamAV detectó una amenaza en el archivo (Eicar-Test-Signature). El documento fue puesto en cuarentena y no se adjuntó al expediente.");
+    return fallar("av", "ClamAV detectó una amenaza en el archivo (Eicar-Test-Signature). El documento fue puesto en cuarentena y no se adjuntó al expediente.", "Bloqueado");
   marcar("av","ok","Sin amenazas");
 
   // 4 · Huella de integridad, calculada realmente sobre el contenido del archivo
@@ -1552,7 +1582,7 @@ $("#cita-form").addEventListener("submit", e => {
   state.citas.unshift({ turno, sede, motivo, fecha, hora:horaSel, exp:$("#c-exp").value });
   pintarCitas(); pintarSlots();
   $("#c-sede").value = ""; $("#c-motivo").value = ""; $("#c-exp").value = "";
-  toast(`Cita ${turno} confirmada`);
+  toast(`Cita ${turno} reservada`);
 });
 
 function pintarCitas(){
@@ -1604,3 +1634,5 @@ document.addEventListener("click", async e => {
    ============================================================ */
 mostrarPanel("login");
 </script>
+</body>
+</html>
