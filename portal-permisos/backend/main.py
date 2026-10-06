@@ -262,10 +262,14 @@ def verificar_documento(
     el escaneo y las consultas a la base no frenan a las demás peticiones.
     """
     contenido = archivo.file.read()
-    nombre = (archivo.filename or "documento.pdf")[:255]      # cabe en documentos.nombre
+    original = archivo.filename or "documento.pdf"
 
     with metricas.cronometrar(metricas.duracion_escaneo):
-        v = antivirus.verificar(contenido, nombre)
+        v = antivirus.verificar(contenido, original)      # el formato se juzga con el nombre real
+
+    # Cabe en documentos.nombre (255) sin perder la extensión.
+    raiz, ext = os.path.splitext(original)
+    nombre = original if len(original) <= 255 else raiz[:255 - len(ext)] + ext
 
     metricas.documentos_verificados.labels(v.resultado.value, MUNICIPIO).inc()
 

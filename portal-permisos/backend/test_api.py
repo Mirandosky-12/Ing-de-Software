@@ -181,13 +181,17 @@ def test_un_pdf_limpio_se_guarda_en_el_almacen_y_en_la_base(cabecera, monkeypatc
 
 def test_un_nombre_de_archivo_larguisimo_se_recorta(cabecera, monkeypatch):
     """SQLite no revisa el largo de las columnas, PostgreSQL sí: sin el recorte
-    este archivo daría un error 500 en producción."""
-    sha = hashlib.sha256(PDF_OK).hexdigest()
-    monkeypatch.setattr(antivirus, "verificar", lambda contenido, nombre: antivirus.Veredicto(
-        antivirus.Resultado.LIMPIO, "Documento verificado.", sha256=sha, bytes_=len(contenido)))
+    este archivo daría un error 500 en producción. El formato se valida con el
+    nombre original; sólo se recorta el que se guarda, conservando la extensión.
+    Corre la validación real: sólo se sustituye el cliente de ClamAV."""
+    class ClamFalso:
+        def instream(self, _flujo):
+            return {"stream": ("OK", None)}
+    monkeypatch.setattr(antivirus, "_cliente", lambda: ClamFalso())
     r = _subir(PDF_OK, "a" * 300 + ".pdf", cabecera)
     assert r.status_code == 200
-    assert len(r.json()["nombre"]) == 255
+    nombre = r.json()["nombre"]
+    assert len(nombre) <= 255 and nombre.endswith(".pdf")
 
 
 def test_validar_la_sesion_no_deja_una_transaccion_abierta(token):
