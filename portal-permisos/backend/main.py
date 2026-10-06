@@ -4,78 +4,71 @@ main.py — API de la Ventanilla Única Municipal.
     uvicorn main:app --reload --port 8000
 
 Rutas:
-    POST /api/cuentas                    crear cuenta
-    POST /api/sesiones                   iniciar sesión
-    GET  /api/permisos                   catálogo de trámites
-    POST /api/documentos/verificar       ClamAV + SHA-256  ← el paso 3 del portal
-    POST /api/solicitudes                crear expediente
-    GET  /api/solicitudes                listar expedientes del usuario
-    POST /api/citas                      reservar turno
-    POST /api/contacto                   mensaje de contacto
-    GET  /salud                          health check
-    GET  /metrics                        métricas para Prometheus → Grafana
+    POST   /api/cuentas                    crear cuenta
+    POST   /api/sesiones                   iniciar sesión
+    DELETE /api/sesiones                   cerrar sesión
+    GET    /api/permisos                   catálogo de trámites
+    POST   /api/documentos/verificar       ClamAV + SHA-256  ← el paso 3 del portal
+    POST   /api/solicitudes                crear expediente
+    GET    /api/solicitudes                listar expedientes del usuario
+    POST   /api/citas                      reservar turno
+    POST   /api/contacto                   mensaje de contacto
+    GET    /api/bitacora/verificar         integridad de la auditoría
+    GET    /salud                          health check
+    GET    /metrics                        métricas para Prometheus → Grafana
 
-El almacenamiento es en memoria a propósito: el objetivo del proyecto es la
-integración de las herramientas, no el motor de base de datos. Para pasar a
-PostgreSQL sólo hay que cambiar el módulo `repositorio`.
+Los datos viven en la base que indique DATABASE_URL (SQLite por defecto,
+PostgreSQL en Docker). Todo el acceso pasa por el módulo `repositorio`.
 """
 
 from __future__ import annotations
 
-import hashlib
 import os
 import secrets
 import time
-from datetime import date, datetime, timezone
+from contextlib import asynccontextmanager
+from datetime import date
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, UploadFile, File
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
+import almacen
 import antivirus
+import bd
 import metricas
+import migrar
+import repositorio
+import seguridad
+from tablas import Cuenta
 
-MUNICIPIO = os.getenv("MUNICIPIO", "panama")   # etiqueta multi-municipio
+MUNICIPIO = repositorio.MUNICIPIO                  # etiqueta multi-municipio
 ORIGENES = os.getenv("CORS_ORIGENES", "http://localhost:5173,http://localhost:3000").split(",")
 
-app = FastAPI(title="Ventanilla Única Municipal", version="1.0.0")
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI):
+    seguridad.comprobar_clave()                    # sin clave de cifrado no se arranca
+    motor = bd.configurar()
+    if motor.dialect.name == "sqlite":
+        migrar.preparar(motor)                     # desarrollo: crea tablas y catálogo
+    yield
+    motor.dispose()
+
+
+app = FastAPI(title="Ventanilla Única Municipal", version="1.1.0", lifespan=ciclo_de_vida)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGENES,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
-
-# ------------------------------------------------------------------ almacén
-
-CUENTAS: dict[str, dict] = {}
-SESIONES: dict[str, str] = {}          # token -> email
-EXPEDIENTES: list[dict] = []
-DOCUMENTOS: dict[str, dict] = {}       # sha256 -> metadatos
-CITAS: list[dict] = []
-BITACORA: list[dict] = []              # auditoría append-only
-
-
-def registrar(accion: str, actor: str, **datos) -> dict:
-    """Bitácora encadenada: cada entrada incluye el hash de la anterior,
-    así una fila alterada rompe la cadena y se nota en la auditoría."""
-    previo = BITACORA[-1]["hash"] if BITACORA else "0" * 64
-    entrada = {
-        "n": len(BITACORA) + 1,
-        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "municipio": MUNICIPIO,
-        "accion": accion,
-        "actor": actor,
-        "datos": datos,
-        "previo": previo,
-    }
-    cuerpo = f"{entrada['n']}{entrada['ts']}{accion}{actor}{datos}{previo}"
-    entrada["hash"] = hashlib.sha256(cuerpo.encode()).hexdigest()
-    BITACORA.append(entrada)
-    return entrada
 
 
 # ------------------------------------------------------------------ modelos
@@ -88,75 +81,63 @@ class CuentaNueva(BaseModel):
     email: EmailStr
     cedula: str | None = Field(default=None, max_length=20)
     password: str = Field(min_length=8, max_length=128)
+    acepta_tratamiento: Literal[True] = Field(description="Consentimiento, Ley 81 de 2019")
 
 
 class Credenciales(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(max_length=128)
 
 
 class SolicitudNueva(BaseModel):
-    permiso_id: str
-    corregimiento: str
-    tipo_acto: str
+    permiso_id: str = Field(max_length=12)
+    corregimiento: str = Field(max_length=60)
+    tipo_acto: str = Field(max_length=80)
     lugar: str = Field(min_length=5, max_length=200)
     fecha: date
-    hora_inicio: str
-    hora_fin: str
+    hora_inicio: str = Field(pattern=r"^\d{2}:\d{2}$")
+    hora_fin: str = Field(pattern=r"^\d{2}:\d{2}$")
     aforo: int = Field(ge=1, le=60_000)
-    responsable: str
-    telefono: str
+    responsable: str = Field(max_length=120)
+    telefono: str = Field(max_length=30)
     motivo: str = Field(min_length=20, max_length=600)
     documento_sha256: str = Field(min_length=64, max_length=64)
+    declaracion_jurada: Literal[True] = Field(description="Acuerdo Municipal 130 de 2016")
 
 
 class CitaNueva(BaseModel):
-    sede: str
-    motivo: str
+    sede: str = Field(max_length=80)
+    motivo: str = Field(max_length=120)
     fecha: date
-    hora: str
-    expediente: str | None = None
+    hora: str = Field(pattern=r"^\d{2}:\d{2}$")
+    expediente: str | None = Field(default=None, max_length=200)
 
 
 class MensajeContacto(BaseModel):
-    nombre: str
+    nombre: str = Field(max_length=120)
     email: EmailStr
-    tema: str
+    tema: str = Field(max_length=80)
     mensaje: str = Field(min_length=15, max_length=2000)
-    expediente: str | None = None
-
-
-# ------------------------------------------------------------------ catálogo
-# Fuente: https://permisosycumplimiento.mupa.gob.pa/tramites-y-permisos/
-
-PERMISOS = [
-    {"id": "ESP-500-",  "nombre": "Espectáculo Público — menos de 500 personas",
-     "categoria": "Espectáculos y eventos públicos", "dias": 15, "aforo": [1, 499]},
-    {"id": "ESP-4000",  "nombre": "Espectáculo Público — menos de 4,000 personas",
-     "categoria": "Espectáculos y eventos públicos", "dias": 20, "aforo": [500, 3999]},
-    {"id": "ESP-500+",  "nombre": "Espectáculo Público — más de 500 personas",
-     "categoria": "Espectáculos y eventos públicos", "dias": 25, "aforo": [500, 60000]},
-    {"id": "NOC-A",     "nombre": "Permiso Nocturno Categoría A",
-     "categoria": "Permisos nocturnos", "dias": 25, "aforo": None},
-    {"id": "ACERA",     "nombre": "Uso Temporal de Aceras",
-     "categoria": "Publicidad y uso de espacio público", "dias": 12, "aforo": None},
-    # … el catálogo completo (35 trámites) vive en el frontend, en CATALOGO.
-]
-POR_ID = {p["id"]: p for p in PERMISOS}
+    expediente: str | None = Field(default=None, max_length=200)
 
 
 # ------------------------------------------------------------------ sesión
 
-def usuario_actual(authorization: str = Header(default="")) -> dict:
-    token = authorization.removeprefix("Bearer ").strip()
-    email = SESIONES.get(token)
-    if not email:
+def _token(authorization: str) -> str:
+    return authorization.removeprefix("Bearer ").strip()
+
+
+def usuario_actual(
+    authorization: str = Header(default=""),
+    s: Session = Depends(bd.sesion),
+) -> Cuenta:
+    cuenta = repositorio.cuenta_por_token(s, _token(authorization))
+    if cuenta is None:
         raise HTTPException(401, "Sesión no válida o expirada. Inicia sesión de nuevo.")
-    return CUENTAS[email]
-
-
-def hash_password(p: str, sal: str) -> str:
-    return hashlib.pbkdf2_hmac("sha256", p.encode(), sal.encode(), 240_000).hex()
+    # Cierra la transacción de lectura: la ruta puede tardar (ClamAV escanea
+    # hasta 30 s) y PostgreSQL corta las transacciones inactivas a los 30 s.
+    s.commit()
+    return cuenta
 
 
 # ------------------------------------------------------------------ métricas
@@ -171,126 +152,153 @@ async def medir(request: Request, call_next):
     return respuesta
 
 
-def refrescar_estados() -> None:
-    for estado in ("Recibido", "En revisión", "Aprobado", "Subsanación", "Rechazado"):
-        n = sum(1 for e in EXPEDIENTES if e["estado"] == estado)
+def refrescar_estados(s: Session) -> bool:
+    """Actualiza los contadores por estado. Si la base no responde, lo marca
+    en mupa_bd_arriba en lugar de tumbar /metrics: las demás series (antivirus,
+    latencia) tienen que seguir llegando a Grafana."""
+    try:
+        conteo = repositorio.conteo_por_estado(s)
+    except SQLAlchemyError:
+        metricas.bd_arriba.set(0)
+        return False
+    for estado, n in conteo.items():
         metricas.solicitudes_por_estado.labels(estado, MUNICIPIO).set(n)
+    metricas.bd_arriba.set(1)
+    return True
 
 
 @app.get("/metrics", include_in_schema=False)
-def endpoint_metricas() -> Response:
+def endpoint_metricas(s: Session = Depends(bd.sesion)) -> Response:
     metricas.antivirus_arriba.set(1 if antivirus.ping() else 0)
     metricas.info_antivirus.info({"version": antivirus.version_firmas()})
-    refrescar_estados()
+    refrescar_estados(s)
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/salud")
-def salud() -> dict:
+def salud(s: Session = Depends(bd.sesion)) -> dict:
     av = antivirus.ping()
+    try:
+        s.execute(text("SELECT 1"))
+        base = {"arriba": True, "expedientes": repositorio.total_expedientes(s),
+                "bitacora": repositorio.total_bitacora(s)}
+    except SQLAlchemyError:
+        base = {"arriba": False}
     return {
-        "estado": "ok" if av else "degradado",
+        "estado": "ok" if av and base["arriba"] else "degradado",
         "municipio": MUNICIPIO,
         "antivirus": {"arriba": av, "firmas": antivirus.version_firmas()},
-        "expedientes": len(EXPEDIENTES),
-        "bitacora": len(BITACORA),
+        "base_de_datos": base,
     }
 
 
 # ------------------------------------------------------------------ cuentas
 
 @app.post("/api/cuentas", status_code=201)
-def crear_cuenta(c: CuentaNueva) -> dict:
-    correo = c.email.lower()
-    if correo in CUENTAS:
+def crear_cuenta(c: CuentaNueva, s: Session = Depends(bd.sesion)) -> dict:
+    try:
+        cuenta = repositorio.crear_cuenta(
+            s, nombre=c.nombre, apellido=c.apellido, edad=c.edad,
+            organizacion=c.organizacion, email=c.email, cedula=c.cedula, password=c.password,
+        )
+    except repositorio.Duplicado:
         raise HTTPException(409, "Ya existe una cuenta con ese correo. Inicia sesión.")
-    sal = secrets.token_hex(16)
-    CUENTAS[correo] = {
-        "nombre": c.nombre, "apellido": c.apellido, "edad": c.edad,
-        "organizacion": c.organizacion, "email": correo, "cedula": c.cedula,
-        "sal": sal, "clave": hash_password(c.password, sal),
-        "creado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-    }
-    registrar("cuenta.creada", correo, organizacion=c.organizacion)
-    token = secrets.token_urlsafe(32)
-    SESIONES[token] = correo
-    return {"token": token, "usuario": _publico(CUENTAS[correo])}
+    repositorio.registrar(s, "cuenta.creada", cuenta.email, organizacion=c.organizacion)
+    token = repositorio.abrir_sesion(s, cuenta)
+    s.commit()
+    return {"token": token, "usuario": repositorio.publico(cuenta)}
 
 
 @app.post("/api/sesiones")
-def iniciar_sesion(c: Credenciales) -> dict:
-    u = CUENTAS.get(c.email.lower())
-    if not u or hash_password(c.password, u["sal"]) != u["clave"]:
-        registrar("sesion.fallida", c.email.lower())
+def iniciar_sesion(c: Credenciales, s: Session = Depends(bd.sesion)) -> dict:
+    correo = c.email.lower()
+    u = repositorio.cuenta_por_email(s, correo)
+    # Si el correo no existe se compara igual contra una clave falsa, para que
+    # la respuesta tarde lo mismo y no revele qué correos están registrados.
+    clave_ok = seguridad.verificar_clave(c.password, u.clave if u else seguridad.CLAVE_FALSA)
+    if u is None or not clave_ok:
+        repositorio.registrar(s, "sesion.fallida", correo)
+        s.commit()                                  # el intento fallido queda registrado
         raise HTTPException(401, "El correo o la contraseña no coinciden.")
-    token = secrets.token_urlsafe(32)
-    SESIONES[token] = u["email"]
-    registrar("sesion.iniciada", u["email"])
-    return {"token": token, "usuario": _publico(u)}
+    token = repositorio.abrir_sesion(s, u)
+    repositorio.registrar(s, "sesion.iniciada", u.email)
+    s.commit()
+    return {"token": token, "usuario": repositorio.publico(u)}
 
 
-def _publico(u: dict) -> dict:
-    return {k: v for k, v in u.items() if k not in ("clave", "sal")}
+@app.delete("/api/sesiones", status_code=204)
+def cerrar_sesion(
+    authorization: str = Header(default=""),
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> Response:
+    repositorio.cerrar_sesion(s, _token(authorization))
+    repositorio.registrar(s, "sesion.cerrada", usuario.email)
+    s.commit()
+    return Response(status_code=204)
 
 
 # ------------------------------------------------------------------ permisos
 
 @app.get("/api/permisos")
-def catalogo(categoria: str | None = None) -> list[dict]:
-    return [p for p in PERMISOS if not categoria or p["categoria"] == categoria]
+def catalogo(categoria: str | None = None, s: Session = Depends(bd.sesion)) -> list[dict]:
+    return [repositorio.permiso_a_dict(p) for p in repositorio.permisos(s, categoria)]
 
 
 # ------------------------------------------------------------------ documentos
 
 @app.post("/api/documentos/verificar")
-async def verificar_documento(
+def verificar_documento(
     archivo: UploadFile = File(...),
-    usuario: dict = Depends(usuario_actual),
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
 ) -> dict:
     """
     Éste es el paso 3 del portal. Recibe el PDF, lo pasa por ClamAV y devuelve
     la huella SHA-256 que después viaja en la solicitud. El archivo sólo se
     guarda si el veredicto es limpio.
+
+    Es una ruta síncrona a propósito: FastAPI la corre en un hilo aparte, así
+    el escaneo y las consultas a la base no frenan a las demás peticiones.
     """
-    contenido = await archivo.read()
+    contenido = archivo.file.read()
+    original = archivo.filename or "documento.pdf"
 
     with metricas.cronometrar(metricas.duracion_escaneo):
-        v = antivirus.verificar(contenido, archivo.filename or "")
+        v = antivirus.verificar(contenido, original)      # el formato se juzga con el nombre real
+
+    # Cabe en documentos.nombre (255) sin perder la extensión.
+    raiz, ext = os.path.splitext(original)
+    nombre = original if len(original) <= 255 else raiz[:255 - len(ext)] + ext
 
     metricas.documentos_verificados.labels(v.resultado.value, MUNICIPIO).inc()
 
     if v.resultado is antivirus.Resultado.INFECTADO:
         metricas.amenazas_detectadas.labels(v.firma_virus or "desconocida", MUNICIPIO).inc()
-        registrar("documento.infectado", usuario["email"],
-                  archivo=archivo.filename, firma=v.firma_virus)
+        repositorio.registrar(s, "documento.infectado", usuario.email,
+                              archivo=nombre, firma=v.firma_virus)
+        s.commit()
         raise HTTPException(422, v.mensaje)
 
     if not v.aceptado:
-        registrar("documento.rechazado", usuario["email"],
-                  archivo=archivo.filename, motivo=v.resultado.value)
+        repositorio.registrar(s, "documento.rechazado", usuario.email,
+                              archivo=nombre, motivo=v.resultado.value)
+        s.commit()
         codigo = 503 if v.resultado is antivirus.Resultado.ANTIVIRUS_CAIDO else 400
         raise HTTPException(codigo, v.mensaje)
 
-    # Deduplicación: el mismo PDF subido dos veces es un solo objeto almacenado.
-    DOCUMENTOS[v.sha256] = {
-        "nombre": archivo.filename,
-        "bytes": v.bytes_,
-        "sha256": v.sha256,
-        "propietario": usuario["email"],
-        "municipio": MUNICIPIO,
-        "sellado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        # En producción: ruta en el almacén de objetos (S3/MinIO) cifrado en reposo.
-        "ubicacion": f"s3://mupa-{MUNICIPIO}-expedientes/{v.sha256[:2]}/{v.sha256}.pdf",
-    }
-    sello = registrar("documento.verificado", usuario["email"],
-                      sha256=v.sha256, bytes=v.bytes_)
+    ruta = almacen.guardar(v.sha256, contenido)
+    doc = repositorio.guardar_documento(s, usuario, v.sha256, nombre, v.bytes_, ruta)
+    sello = repositorio.registrar(s, "documento.verificado", usuario.email,
+                                  sha256=v.sha256, bytes=v.bytes_)
+    s.commit()
 
     return {
         "sha256": v.sha256,
         "bytes": v.bytes_,
-        "nombre": archivo.filename,
-        "sellado": DOCUMENTOS[v.sha256]["sellado"],
-        "bitacora": sello["hash"],
+        "nombre": nombre,
+        "sellado": doc.sellado_en.isoformat(timespec="seconds"),
+        "bitacora": sello.hash,
         "mensaje": v.mensaje,
     }
 
@@ -298,97 +306,83 @@ async def verificar_documento(
 # ------------------------------------------------------------------ solicitudes
 
 @app.post("/api/solicitudes", status_code=201)
-def crear_solicitud(s: SolicitudNueva, usuario: dict = Depends(usuario_actual)) -> dict:
-    permiso = POR_ID.get(s.permiso_id)
+def crear_solicitud(
+    sol: SolicitudNueva,
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> dict:
+    permiso = repositorio.permiso(s, sol.permiso_id)
     if not permiso:
         raise HTTPException(404, "El permiso solicitado no existe en el catálogo.")
 
-    doc = DOCUMENTOS.get(s.documento_sha256)
-    if not doc or doc["propietario"] != usuario["email"]:
+    doc = repositorio.documento_de(s, usuario.id, sol.documento_sha256)
+    if not doc:
         raise HTTPException(400, "Adjunta y verifica un documento antes de enviar la solicitud.")
 
-    if (date.today() - s.fecha).days > 0:
+    if (date.today() - sol.fecha).days > 0:
         raise HTTPException(400, "La fecha del acto ya pasó.")
-    if (s.fecha - date.today()).days < 15:
+    if (sol.fecha - date.today()).days < 15:
         raise HTTPException(400, "La fecha debe tener al menos 15 días hábiles de antelación.")
 
-    rango = permiso.get("aforo")
-    if rango and not (rango[0] <= s.aforo <= rango[1]):
+    if permiso.aforo_min is not None and not (permiso.aforo_min <= sol.aforo <= permiso.aforo_max):
         raise HTTPException(
             400,
-            f"Para «{permiso['nombre']}» el aforo debe estar entre {rango[0]} y {rango[1]} personas.",
+            f"Para «{permiso.nombre}» el aforo debe estar entre "
+            f"{permiso.aforo_min} y {permiso.aforo_max} personas.",
         )
 
-    codigo = f"EXP-{date.today().year}-{len(EXPEDIENTES) + 4183:06d}"
-    expediente = {
-        "codigo": codigo,
-        "municipio": MUNICIPIO,
-        "permiso_id": permiso["id"],
-        "permiso": permiso["nombre"],
-        "solicitante": usuario["email"],
-        "estado": "Recibido",
-        "etapa": "En cola de asignación · Dirección de Permisos",
-        "creado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "plazo_dias": permiso["dias"],
-        "documento": s.documento_sha256,
-        **s.model_dump(mode="json"),
-    }
-    EXPEDIENTES.append(expediente)
+    expediente = repositorio.crear_expediente(s, usuario, permiso, doc, sol.model_dump())
+    repositorio.registrar(s, "expediente.creado", usuario.email,
+                          codigo=expediente.codigo, permiso=permiso.id)
+    s.commit()
 
-    metricas.solicitudes_creadas.labels(permiso["nombre"], s.corregimiento, MUNICIPIO).inc()
-    refrescar_estados()
-    registrar("expediente.creado", usuario["email"], codigo=codigo, permiso=permiso["id"])
-
-    return expediente
+    metricas.solicitudes_creadas.labels(permiso.nombre, sol.corregimiento, MUNICIPIO).inc()
+    refrescar_estados(s)
+    return repositorio.expediente_a_dict(expediente)
 
 
 @app.get("/api/solicitudes")
 def listar_solicitudes(
     estado: Literal["Recibido", "En revisión", "Aprobado", "Subsanación", "Rechazado"] | None = None,
-    usuario: dict = Depends(usuario_actual),
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
 ) -> list[dict]:
-    return [
-        e for e in reversed(EXPEDIENTES)
-        if e["solicitante"] == usuario["email"] and (not estado or e["estado"] == estado)
-    ]
+    return [repositorio.expediente_a_dict(e) for e in repositorio.expedientes_de(s, usuario, estado)]
 
 
 # ------------------------------------------------------------------ citas
 
 @app.post("/api/citas", status_code=201)
-def reservar_cita(c: CitaNueva, usuario: dict = Depends(usuario_actual)) -> dict:
+def reservar_cita(
+    c: CitaNueva,
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> dict:
     if c.fecha.weekday() >= 5:
         raise HTTPException(400, "La atención presencial es de lunes a viernes.")
-    if any(x["sede"] == c.sede and x["fecha"] == c.fecha.isoformat() and x["hora"] == c.hora
-           for x in CITAS):
+    email = usuario.email          # se lee antes: un rollback expiraría el objeto
+    try:
+        cita = repositorio.reservar_cita(s, usuario, c.model_dump())
+    except repositorio.TurnoOcupado:
         raise HTTPException(409, "Ese horario acaba de ocuparse. Elige otro turno.")
-
-    turno = f"CT-{len(CITAS) + 1001:04d}"
-    cita = {"turno": turno, "solicitante": usuario["email"], "municipio": MUNICIPIO,
-            **c.model_dump(mode="json")}
-    CITAS.append(cita)
-    registrar("cita.reservada", usuario["email"], turno=turno, sede=c.sede)
-    return cita
+    repositorio.registrar(s, "cita.reservada", email, turno=cita.turno, sede=c.sede)
+    s.commit()
+    return repositorio.cita_a_dict(cita)
 
 
 # ------------------------------------------------------------------ contacto
 
 @app.post("/api/contacto", status_code=201)
-def contacto(m: MensajeContacto) -> dict:
+def contacto(m: MensajeContacto, s: Session = Depends(bd.sesion)) -> dict:
     ticket = f"MSG-{secrets.randbelow(900_000) + 100_000}"
-    registrar("contacto.recibido", m.email.lower(), ticket=ticket, tema=m.tema)
+    repositorio.registrar(s, "contacto.recibido", m.email.lower(), ticket=ticket, tema=m.tema)
+    s.commit()
     return {"ticket": ticket, "mensaje": "Respondemos en un plazo de 3 días hábiles."}
 
 
 # ------------------------------------------------------------------ auditoría
 
 @app.get("/api/bitacora/verificar")
-def verificar_bitacora() -> dict:
+def verificar_bitacora(s: Session = Depends(bd.sesion)) -> dict:
     """Recorre la cadena de hashes y reporta la primera fila alterada."""
-    previo = "0" * 64
-    for e in BITACORA:
-        cuerpo = f"{e['n']}{e['ts']}{e['accion']}{e['actor']}{e['datos']}{previo}"
-        if hashlib.sha256(cuerpo.encode()).hexdigest() != e["hash"]:
-            return {"integra": False, "rota_en": e["n"]}
-        previo = e["hash"]
-    return {"integra": True, "entradas": len(BITACORA)}
+    return repositorio.verificar_bitacora(s)

@@ -1,17 +1,96 @@
-# Levanta las tres piezas de infraestructura del proyecto:
-#   clamav     → antivirus documental (puerto 3310)
-#   prometheus → recolecta las métricas de la API (puerto 9090)
-#   grafana    → los tableros (puerto 3001, usuario admin / admin)
+# Levanta todo el sistema:
+#   bd           → PostgreSQL 17 (sólo en la red interna, sin puerto al exterior)
+#   migraciones  → crea tablas, triggers y permisos con el rol dueño, y termina
+#   api          → la API con el rol mupa_app (puerto 8000)
+#   clamav       → antivirus documental (puerto 3310)
+#   prometheus   → recolecta las métricas de la API (puerto 9090)
+#   grafana      → los tableros (puerto 3001, usuario admin / admin)
 #
-#   docker compose up -d
-#   # la API se levanta aparte:  uvicorn main:app --port 8000
+#   python generar_secretos.py        # una sola vez: crea secretos/
+#   docker compose up -d --build
 #
 # La primera vez ClamAV tarda ~2 minutos en descargar su base de firmas.
 # Compruébalo con:  docker compose logs -f clamav
+#
+# Base de pruebas para pytest -m postgres (en memoria, se borra al pararla):
+#   docker compose --profile pruebas up -d bd-pruebas
+
+x-endurecido: &endurecido
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
 
 services:
+  bd:
+    <<: *endurecido
+    image: postgres:17-alpine
+    container_name: mupa-bd
+    environment:
+      POSTGRES_DB: mupa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/bd_superusuario_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=peer
+    secrets:
+      - bd_superusuario_password
+      - bd_owner_password
+      - bd_app_password
+    volumes:
+      - datos-bd:/var/lib/postgresql/data
+      - ./bd/01-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
+    networks: [datos]
+    # Sin "ports": la base no es alcanzable desde fuera de Docker.
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "mupa"]
+      interval: 10s
+      retries: 5
+      start_period: 20s
+
+  migraciones:
+    image: mupa-api:local
+    build: ../backend
+    container_name: mupa-migraciones
+    command: ["python", "migrar.py"]
+    environment:
+      DATABASE_URL_FILE: /run/secrets/bd_url_owner
+      CLAVE_CIFRADO_FILE: /run/secrets/clave_cifrado
+    secrets: [bd_url_owner, clave_cifrado]
+    networks: [datos]
+    depends_on:
+      bd: { condition: service_healthy }
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop: [ALL]
+    restart: "no"
+
+  api:
+    <<: *endurecido
+    image: mupa-api:local
+    build: ../backend
+    container_name: mupa-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL_FILE: /run/secrets/bd_url_app
+      CLAVE_CIFRADO_FILE: /run/secrets/clave_cifrado
+      CLAMAV_HOST: clamav
+      MUNICIPIO: panama
+      CORS_ORIGENES: http://localhost:5173
+    secrets: [bd_url_app, clave_cifrado]
+    volumes:
+      - expedientes:/datos/expedientes
+    networks: [datos, app]
+    depends_on:
+      migraciones: { condition: service_completed_successfully }
+      clamav: { condition: service_started }
+    read_only: true              # el único lugar escribible es el volumen de expedientes
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    mem_limit: 256m
+
   clamav:
-    image: clamav/clamav:1.4-bookworm
+    image: clamav/clamav:1.4     # basada en Alpine; la etiqueta 1.4-bookworm no existe
     container_name: mupa-clamav
     ports:
       - "3310:3310"
@@ -20,6 +99,7 @@ services:
     environment:
       CLAMAV_NO_MILTERD: "true"
       FRESHCLAM_CHECKS: "4"           # actualiza firmas 4 veces al día
+    networks: [app]
     healthcheck:
       test: ["CMD", "clamdcheck.sh"]
       interval: 60s
@@ -33,10 +113,14 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alertas.yml:/etc/prometheus/alertas.yml:ro
       - metricas:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=90d
+    networks: [app]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   grafana:
     image: grafana/grafana:11.5.0
@@ -54,8 +138,41 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
+    networks: [app]
+
+  bd-pruebas:
+    image: postgres:17-alpine
+    container_name: mupa-bd-pruebas
+    profiles: [pruebas]
+    environment:
+      POSTGRES_DB: mupa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pruebas-superusuario
+      # Claves fijas a propósito: base desechable, en memoria y sólo en 127.0.0.1.
+      BD_OWNER_PASSWORD: pruebas-dueno
+      BD_APP_PASSWORD: pruebas-app
+    volumes:
+      - ./bd/01-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
+    tmpfs: [/var/lib/postgresql/data]
+    ports:
+      - "127.0.0.1:55432:5432"
+
+networks:
+  datos:
+    internal: true               # sin salida a internet: sólo bd, migraciones y api
+  app:
+
+secrets:
+  bd_superusuario_password: { file: ./secretos/bd_superusuario_password.txt }
+  bd_owner_password:        { file: ./secretos/bd_owner_password.txt }
+  bd_app_password:          { file: ./secretos/bd_app_password.txt }
+  bd_url_owner:             { file: ./secretos/bd_url_owner.txt }
+  bd_url_app:               { file: ./secretos/bd_url_app.txt }
+  clave_cifrado:            { file: ./secretos/clave_cifrado.txt }
 
 volumes:
+  datos-bd:
+  expedientes:
   firmas:
   metricas:
   tableros:
