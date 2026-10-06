@@ -435,6 +435,16 @@ dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
 .slot:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft)}
 .slot[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:500}
 .slot:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
+.atajos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);
+  color:var(--ink);font:inherit;font-size:.84rem;cursor:pointer}
+.chip:hover{border-color:var(--brand)}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:600}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.8rem;color:var(--ink-2);margin-top:10px}
+.leyenda span{display:inline-flex;align-items:center;gap:6px}
+.leyenda i{width:14px;height:14px;border-radius:4px;border:1px solid var(--line);background:var(--surface)}
+.leyenda i.ocup{opacity:.38;background:repeating-linear-gradient(135deg,var(--line) 0 2px,transparent 2px 5px)}
+.leyenda i.sel{background:var(--brand);border-color:var(--brand)}
 
 /* ---------- avisos ---------- */
 .notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.9rem;align-items:flex-start}
@@ -928,12 +938,18 @@ dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
               <label for="c-fecha">Fecha <span class="req">*</span></label>
               <input id="c-fecha" type="date" required>
               <span class="hint">Atención en días hábiles (L–V).</span>
+              <div class="atajos" id="c-atajos" role="group" aria-label="Próximos días hábiles"></div>
             </div>
           </div>
           <div>
             <span class="eyebrow">Horarios disponibles</span>
             <div class="slots" id="slots" style="margin-top:8px"></div>
-            <p class="small muted" style="margin-top:8px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m. Los tachados ya están ocupados.</p>
+            <div class="leyenda" id="leyenda-slots">
+              <span><i aria-hidden="true"></i>Disponible</span>
+              <span><i class="ocup" aria-hidden="true"></i>Ocupado</span>
+              <span><i class="sel" aria-hidden="true"></i>Elegido</span>
+            </div>
+            <p class="small muted" style="margin-top:6px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m.</p>
           </div>
           <div id="c-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:flex-end">
@@ -1251,9 +1267,13 @@ function fechaLarga(iso){
                  "agosto","septiembre","octubre","noviembre","diciembre"];
   return `${d} de ${meses[m-1]} de ${y}`;
 }
+// Fecha local (Panamá). toISOString() usa UTC: después de las 7 p. m. daba el día siguiente.
+function aISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function hoyISO(off = 0){
   const d = new Date(); d.setDate(d.getDate() + off);
-  return d.toISOString().slice(0,10);
+  return aISO(d);
 }
 function estadoClase(e){
   return { "Aprobado":"ok", "En revisión":"warn", "Subsanación":"crit", "Recibido":"info" }[e] || "info";
@@ -1835,13 +1855,32 @@ function pintarSlots(){
     return `<button type="button" class="slot" data-h="${h}" aria-pressed="false" ${ocupado ? "disabled" : ""}>${h}</button>`;
   }).join("");
 }
-$("#c-fecha").addEventListener("change", pintarSlots);
+const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+function pintarAtajos(){
+  const elegida = $("#c-fecha").value, dias = [];
+  for (const d = new Date(); dias.length < 5; ){
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() % 6) dias.push(new Date(d));            // ni domingo (0) ni sábado (6)
+  }
+  $("#c-atajos").innerHTML = dias.map(d => {
+    const iso = aISO(d);
+    return `<button type="button" class="chip" data-fecha="${iso}" aria-pressed="${iso === elegida}"
+              aria-label="${DIAS[d.getDay()]} ${fechaLarga(iso)}">${DIAS[d.getDay()]} ${d.getDate()}</button>`;
+  }).join("");
+}
+$("#c-atajos").addEventListener("click", e => {
+  const b = e.target.closest("[data-fecha]"); if (!b) return;
+  $("#c-fecha").value = b.dataset.fecha;
+  pintarSlots(); pintarAtajos();
+});
+$("#c-fecha").addEventListener("change", () => { pintarSlots(); pintarAtajos(); });
 $("#slots").addEventListener("click", e => {
   const b = e.target.closest(".slot"); if (!b || b.disabled) return;
   $$(".slot").forEach(x => x.setAttribute("aria-pressed", x === b));
   horaSel = b.dataset.h;
 });
 pintarSlots();
+pintarAtajos();
 
 $("#cita-form").addEventListener("submit", e => {
   e.preventDefault();

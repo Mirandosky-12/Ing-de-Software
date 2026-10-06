@@ -23,6 +23,28 @@ for (const tema of ["light", "dark"]) {
   });
 }
 
+for (const tema of ["light", "dark"]) {
+  for (const seccion of ["Solicitar permiso", "Mis solicitudes", "Citas", "Contacto"]) {
+    test(`«${seccion}» cumple WCAG 2.1 AA (tema ${tema === "light" ? "claro" : "oscuro"})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: tema });
+      await entrar(page);
+      await page.getByRole("navigation", { name: /Secciones/ }).getByRole("button", { name: seccion }).click();
+      expect(await violaciones(page)).toEqual([]);
+    });
+  }
+}
+
+test("A 320 px ninguna sección obliga a desplazarse de lado (WCAG 1.4.10)", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await entrar(page);
+  for (const seccion of ["Inicio", "Solicitar permiso", "Mis solicitudes", "Citas", "Contacto"]) {
+    await page.getByRole("navigation", { name: /Secciones/ }).getByRole("button", { name: seccion }).click();
+    const desborda = await page.evaluate(() =>
+      document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(desborda, seccion).toBe(false);
+  }
+});
+
 test("La franja oficial identifica al Municipio en todas las pantallas", async ({ page }) => {
   await page.goto("/");
   const franja = page.getByRole("note", { name: "Sitio oficial" });
