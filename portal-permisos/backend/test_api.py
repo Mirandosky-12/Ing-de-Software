@@ -31,9 +31,12 @@ client = TestClient(main.app)
 
 PDF_OK = b"%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
 NO_PDF = b"Esto no es un PDF, es texto plano."
-EICAR = (b"%PDF-1.4\n"
-         rb"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
-         b"\n%%EOF\n")
+# ClamAV sólo reconoce EICAR al inicio de un archivo, y la API exige que empiece
+# con %PDF: por eso la cadena va dentro de un stream, que ClamAV extrae del PDF.
+_CADENA_EICAR = rb"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
+EICAR = (b"%PDF-1.4\n1 0 obj\n<< /Type /EmbeddedFile /Length 68 >>\nstream\n"
+         + _CADENA_EICAR
+         + b"\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n")
 
 CUENTA = {
     "nombre": "Diego", "apellido": "López", "edad": 22,
