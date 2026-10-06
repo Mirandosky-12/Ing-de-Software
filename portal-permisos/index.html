@@ -33,6 +33,10 @@
   --crit:#a52218;
   --crit-soft:#fbe3e1;
   --shadow:0 1px 2px rgba(21,33,44,.06), 0 8px 24px -16px rgba(21,33,44,.28);
+  --accent-soft:#f8ecdb;
+  --franja:#0a3f6f;
+  --ring:0 0 0 3px rgba(11,79,138,.28);
+  --tap:44px;               /* alto mínimo de lo que se toca con el dedo */
 
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
@@ -58,6 +62,7 @@
     --crit:#f0796c;
     --crit-soft:#331a1a;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  --accent-soft:#33260f; --franja:#0d2d4a; --ring:0 0 0 3px rgba(79,161,224,.35);
     color-scheme:dark;
   }
 }
@@ -80,6 +85,7 @@
   --crit:#f0796c;
   --crit-soft:#331a1a;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  --accent-soft:#33260f; --franja:#0d2d4a; --ring:0 0 0 3px rgba(79,161,224,.35);
   color-scheme:dark;
 }
 
@@ -94,7 +100,7 @@ body{
   background:var(--bg);
   color:var(--ink);
   font-family:var(--body);
-  font-size:15px;
+  font-size:16px;
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
@@ -105,11 +111,15 @@ h3{font-size:1rem;font-weight:600}
 p{margin:0}
 a{color:var(--brand)}
 button{font:inherit}
-:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:4px}
+.ic{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .eyebrow{
   font-family:var(--display);font-size:.7rem;font-weight:600;
-  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2);
+  letter-spacing:.11em;text-transform:uppercase;color:var(--brand);
 }
 .muted{color:var(--ink-2)}
 .small{font-size:.83rem}
@@ -122,14 +132,17 @@ button{font:inherit}
 .req{color:var(--crit);font-weight:700}
 input[type=text],input[type=email],input[type=password],input[type=number],
 input[type=date],input[type=time],input[type=tel],select,textarea{
-  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
-  background:var(--surface);color:var(--ink);font:inherit;font-size:.92rem;
+  width:100%;min-height:var(--tap);padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:1rem;
+  transition:border-color .15s ease, box-shadow .15s ease;
 }
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
+input[type=checkbox]{min-width:20px;height:20px;accent-color:var(--brand);flex:none}
 textarea{resize:vertical;min-height:88px}
 input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:9px 18px;border-radius:7px;border:1px solid transparent;
+  min-height:var(--tap);padding:10px 20px;border-radius:8px;border:1px solid transparent;
   background:var(--brand);color:var(--on-brand);font-weight:600;font-size:.9rem;cursor:pointer;
   transition:filter .15s ease, background .15s ease;
 }
@@ -137,7 +150,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
 .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
 .btn.ghost{background:transparent;color:var(--brand);border-color:var(--line)}
 .btn.ghost:hover{background:var(--surface-2)}
-.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px}
+.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px;min-height:36px}
 .btn.plain:hover{color:var(--ink);background:var(--surface-2)}
 .btn.wide{width:100%}
 .row{display:flex;gap:12px;flex-wrap:wrap}
@@ -168,6 +181,7 @@ input:invalid:not(:placeholder-shown){border-color:var(--crit)}
   border:2px solid var(--brand);display:grid;place-items:center;
   font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--brand);
   letter-spacing:.02em;background:var(--brand-soft);
+  box-shadow:0 0 0 3px var(--accent-soft);
 }
 .brandline{display:flex;gap:14px;align-items:center;margin-bottom:22px}
 .brandline .t1{font-family:var(--display);font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
@@ -358,7 +372,13 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .slot:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
 
 /* ---------- avisos ---------- */
-.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.85rem;align-items:flex-start}
+.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.9rem;align-items:flex-start}
+.notice .ni{width:18px;height:18px;flex:none;margin-top:2px}
+
+/* ---------- franja oficial ---------- */
+.franja{background:var(--franja);color:#fff;font-size:.8rem;border-bottom:3px solid var(--accent)}
+.franja-in{max-width:1040px;margin:0 auto;padding:6px 16px;display:flex;gap:8px;align-items:center}
+.franja svg{width:16px;height:16px;flex:none}
 .notice.ok{background:var(--ok-soft);color:var(--ok)}
 .notice.crit{background:var(--crit-soft);color:var(--crit)}
 .notice.info{background:var(--brand-soft);color:var(--brand)}
@@ -378,6 +398,18 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 10"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+
+<div class="franja" role="note" aria-label="Sitio oficial">
+  <div class="franja-in">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-escudo"/></svg>
+    <span>Portal oficial del <b>Municipio de Panamá</b> · Dirección de Permisos y Cumplimiento</span>
+  </div>
+</div>
 
 <!-- =================== ACCESO =================== -->
 <div id="view-auth" class="auth">
@@ -418,7 +450,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <label for="li-pass">Contraseña <span class="req">*</span></label>
           <input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
         </div>
-        <div id="li-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+        <div id="li-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Iniciar sesión</button>
         <p class="small muted" style="text-align:center">
           ¿No tienes cuenta? <a href="#crear" id="go-signup">Créala aquí</a>
@@ -476,7 +508,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <input id="su-ok" type="checkbox" required style="margin-top:3px;width:auto">
           <span>Autorizo el tratamiento de mis datos conforme a la <b style="color:var(--ink)">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
         </label>
-        <div id="su-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+        <div id="su-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Crear cuenta y entrar</button>
         <p class="small muted" style="text-align:center">
           ¿Ya tienes cuenta? <a href="#entrar" id="go-login">Inicia sesión</a>
@@ -653,7 +685,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <span class="hint"><span id="motivo-n">0</span>/600 caracteres · mínimo 20.</span>
           </div>
 
-          <div id="s2-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div id="s2-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="1">Atrás</button>
             <button class="btn" type="submit">Continuar</button>
@@ -690,7 +722,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             </div>
           </div>
 
-          <div id="s3-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div id="s3-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="2">Atrás</button>
             <button class="btn" id="s3-next" disabled>Continuar</button>
@@ -716,7 +748,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 
         <!-- Comprobante -->
         <div class="card" data-step="5" hidden style="margin-top:14px;flex-direction:column;gap:16px">
-          <div class="notice ok"><span>✓</span><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
+          <div class="notice ok"><svg class="ic ni" aria-hidden="true"><use href="#i-ok"/></svg><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
           <dl class="summary" id="receipt"></dl>
           <div class="actions">
             <button class="btn" data-nav="expedientes">Ver mis solicitudes</button>
@@ -807,7 +839,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <div class="slots" id="slots" style="margin-top:8px"></div>
             <p class="small muted" style="margin-top:8px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m. Los tachados ya están ocupados.</p>
           </div>
-          <div id="c-err" class="notice crit" hidden><span>⚠</span><span></span></div>
+          <div id="c-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:flex-end">
             <button class="btn" type="submit">Confirmar cita</button>
           </div>
@@ -864,8 +896,8 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
               <label for="ct-msg">Mensaje <span class="req">*</span></label>
               <textarea id="ct-msg" required minlength="15" placeholder="Cuéntanos en qué podemos ayudarte."></textarea>
             </div>
-            <div id="ct-err" class="notice crit" hidden><span>⚠</span><span></span></div>
-            <div id="ct-ok" class="notice ok" hidden><span>✓</span><span></span></div>
+            <div id="ct-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
+            <div id="ct-ok" class="notice ok" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-ok"/></svg><span></span></div>
             <div class="actions" style="justify-content:flex-end">
               <button class="btn" type="submit">Enviar mensaje</button>
             </div>
