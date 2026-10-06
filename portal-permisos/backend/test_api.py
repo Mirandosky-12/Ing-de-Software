@@ -108,6 +108,17 @@ def test_sin_sesion_no_se_puede_subir():
     assert r.status_code == 401
 
 
+@qase.id(25)
+@qase.title("Si ClamAV está caído, no se acepta el documento")
+def test_antivirus_caido_devuelve_503(cabecera, monkeypatch):
+    def sin_conexion():
+        raise ConnectionRefusedError("clamd no responde")
+    monkeypatch.setattr(main.antivirus, "_cliente", sin_conexion)
+    r = _subir(PDF_OK, "requisitos.pdf", cabecera)
+    assert r.status_code == 503
+    assert "no está disponible" in r.json()["detail"]
+
+
 @pytest.mark.clamav
 @qase.id(20)
 @qase.title("Un PDF limpio devuelve su huella SHA-256")
