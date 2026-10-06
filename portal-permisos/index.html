@@ -323,6 +323,12 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 .stepper .s[data-state="on"] .num{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 .stepper .s[data-state="done"] .num{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
 .stepper .lbl{font-size:.8rem;color:var(--ink-2);font-weight:500}
+@media (max-width:640px){.stepper .s:not([data-state="on"]) .lbl{display:none}}
+.progreso{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}
+.progreso span{display:block;height:100%;width:25%;background:var(--brand);border-radius:inherit;transition:width .3s ease}
+.paso-de{font-size:.85rem;color:var(--ink-2);margin-top:6px;font-weight:500}
+.buscador input{padding-left:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23556676' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center}
 .stepper .s[data-state="on"] .lbl{color:var(--ink);font-weight:600}
 
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
@@ -641,6 +647,9 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <div class="s"><span class="num">3</span><span class="lbl">Documentos</span></div>
           <div class="s"><span class="num">4</span><span class="lbl">Revisión y envío</span></div>
         </div>
+        <div class="progreso" id="progreso" role="progressbar" aria-label="Avance de la solicitud"
+             aria-valuemin="1" aria-valuemax="4" aria-valuenow="1"><span></span></div>
+        <p class="paso-de" id="paso-de" aria-live="polite">Paso 1 de 4 · Tipo de permiso</p>
 
         <!-- Paso 1 -->
         <div class="card" data-step="1" style="margin-top:14px;display:flex;flex-direction:column;gap:16px">
@@ -648,6 +657,14 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <h2>¿Qué tipo de permiso necesitas?</h2>
             <p class="small muted" style="margin-top:4px">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
           </div>
+          <div class="field buscador">
+            <label for="q-tramite">Buscar un trámite</label>
+            <input id="q-tramite" type="search" autocomplete="off" placeholder="Ej. aceras, nocturno, chiva, plagas">
+            <span class="hint">Escribe una palabra o elige una categoría abajo.</span>
+          </div>
+          <div class="opt-list" id="q-res" hidden></div>
+          <p class="notice info" id="q-vacio" hidden>No encontramos trámites con esas palabras. Prueba con otra palabra o elige una categoría.</p>
+          <p class="sr" id="q-cuenta" aria-live="polite"></p>
           <div>
             <span class="eyebrow">1 · Categoría</span>
             <div class="cat-grid" id="cats" style="margin-top:8px"></div>
@@ -775,6 +792,12 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <p class="small muted" style="margin-top:4px">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
           </div>
           <dl class="summary" id="sum"></dl>
+          <div class="actions" style="gap:6px">
+            <span class="small muted">¿Algo no está bien?</span>
+            <button class="btn plain" type="button" data-back="1">Cambiar permiso</button>
+            <button class="btn plain" type="button" data-back="2">Cambiar datos</button>
+            <button class="btn plain" type="button" data-back="3">Cambiar documento</button>
+          </div>
           <label style="display:flex;gap:9px;align-items:flex-start;font-size:.83rem;color:var(--ink-2)">
             <input id="s4-ok" type="checkbox" style="margin-top:3px;width:auto">
             <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b style="color:var(--ink)">Acuerdo Municipal N.° 130 de 2016</b>.</span>
@@ -1405,6 +1428,35 @@ function requisitosHTML(p){
   </div>`;
 }
 
+const sinTildes = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+$("#q-tramite").addEventListener("input", e => {
+  const q = sinTildes(e.target.value.trim());
+  const res = $("#q-res"), vacio = $("#q-vacio");
+  if (q.length < 2){ res.hidden = vacio.hidden = true; $("#q-cuenta").textContent = ""; return; }
+  const palabras = q.split(/s+/);
+  const hallados = ALL_PERMS
+    .filter(p => { const t = sinTildes(`${p.n} ${p.cat}`); return palabras.every(w => t.includes(w)); })
+    .slice(0, 8);
+  res.innerHTML = hallados.map((p, i) =>
+    `<button type="button" class="opt" data-buscar="${esc(p.id)}" aria-label="${esc(p.n)}" aria-describedby="qd-${i}">
+       <span class="radio"></span>
+       <span><span class="on">${esc(p.n)}</span><span class="od" id="qd-${i}">${esc(p.cat)} · ${p.d} días háb.</span></span>
+     </button>`).join("");
+  res.hidden = !hallados.length;
+  vacio.hidden = hallados.length > 0;
+  $("#q-cuenta").textContent = hallados.length ? `${hallados.length} trámites encontrados` : "Sin resultados";
+});
+
+$("#q-res").addEventListener("click", e => {
+  const b = e.target.closest("[data-buscar]"); if (!b) return;
+  const p = ALL_PERMS.find(x => x.id === b.dataset.buscar);
+  $(`.cat[data-cat="${CATALOGO.findIndex(c => c.cat === p.cat)}"]`).click();   // pinta su categoría
+  $(`#perms [data-perm="${CSS.escape(p.id)}"]`).click();                      // y marca el trámite
+  $("#q-tramite").value = ""; $("#q-res").hidden = true; $("#q-cuenta").textContent = "";
+  $("#req-wrap").scrollIntoView({ behavior:"smooth", block:"nearest" });
+});
+
 $("#s1-next").addEventListener("click", () => {
   const p = state.sel.perm;
   $("#s2-sub").textContent = p.n;
@@ -1615,6 +1667,7 @@ $("#new-again").addEventListener("click", reiniciarAsistente);
 
 function reiniciarAsistente(){
   state.sel = { cat:null, perm:null, datos:null, doc:null };
+  $("#q-tramite").value = ""; $("#q-res").hidden = $("#q-vacio").hidden = true;
   $$(".cat").forEach(x => x.setAttribute("aria-pressed","false"));
   $("#perm-wrap").hidden = true; $("#req-wrap").hidden = true;
   $("#s1-next").disabled = true; $("#s3-next").disabled = true; $("#s4-send").disabled = true;
@@ -1638,6 +1691,12 @@ function paso(n){
     else s.querySelector(".num").textContent = String(i + 1);
   });
   $("#stepper").hidden = n === 5;
+  const nombres = ["Tipo de permiso", "Datos del acto", "Documentos", "Revisión y envío"];
+  const actual = Math.min(n, 4);
+  $("#paso-de").textContent = `Paso ${actual} de 4 · ${nombres[actual - 1]}`;
+  $("#progreso").setAttribute("aria-valuenow", String(actual));
+  $("#progreso span").style.width = `${actual * 25}%`;
+  $("#paso-de").hidden = $("#progreso").hidden = n === 5;
   $(`[data-step="${n}"]`).scrollIntoView({ behavior:"smooth", block:"start" });
 }
 $$("[data-back]").forEach(b => b.addEventListener("click", () => paso(Number(b.dataset.back))));
