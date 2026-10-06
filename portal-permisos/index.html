@@ -1428,13 +1428,13 @@ function requisitosHTML(p){
   </div>`;
 }
 
-const sinTildes = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const sinTildes = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 $("#q-tramite").addEventListener("input", e => {
   const q = sinTildes(e.target.value.trim());
   const res = $("#q-res"), vacio = $("#q-vacio");
   if (q.length < 2){ res.hidden = vacio.hidden = true; $("#q-cuenta").textContent = ""; return; }
-  const palabras = q.split(/s+/);
+  const palabras = q.split(/\s+/);
   const hallados = ALL_PERMS
     .filter(p => { const t = sinTildes(`${p.n} ${p.cat}`); return palabras.every(w => t.includes(w)); })
     .slice(0, 8);

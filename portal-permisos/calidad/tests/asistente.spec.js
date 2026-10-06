@@ -26,6 +26,11 @@ test("El buscador no distingue tildes ni mayúsculas", async ({ page }) => {
   await expect(page.locator("#q-res").getByRole("button", { name: "Permiso Nocturno Categoría B" })).toBeVisible();
 });
 
+test("El buscador exige todas las palabras, en cualquier orden", async ({ page }) => {
+  await page.getByLabel("Buscar un trámite").fill("categoria nocturno");
+  await expect(page.locator("#q-res").getByRole("button", { name: "Permiso Nocturno Categoría B" })).toBeVisible();
+});
+
 test("Si no hay coincidencias, lo dice y sugiere qué hacer", async ({ page }) => {
   await page.getByLabel("Buscar un trámite").fill("helicóptero");
   await expect(page.getByText(/No encontramos trámites/)).toBeVisible();
