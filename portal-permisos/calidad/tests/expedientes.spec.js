@@ -33,6 +33,25 @@ test("El detalle muestra la línea de tiempo, la huella y qué sigue", async ({ 
   expect(await violaciones(page)).toEqual([]);
 });
 
+test("El detalle descarga la constancia de la solicitud en PDF", async ({ page }) => {
+  await page.getByRole("navigation", { name: /Secciones/ }).getByRole("button", { name: "Mis solicitudes" }).click();
+  await page.getByRole("button", { name: "Ver detalle de EXP-2026-004182" }).click();
+  const [descarga] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("dialog").getByRole("button", { name: "Descargar constancia" }).click(),
+  ]);
+  expect(descarga.suggestedFilename()).toBe("constancia-EXP-2026-004182.pdf");
+  const fs = require("fs");
+  const pdf = fs.readFileSync(await descarga.path() ?? "").toString("latin1");
+  expect(pdf.startsWith("%PDF-1.4")).toBe(true);
+  for (const dato of ["EXP-2026-004182", "9f2c41ab77d0e5b3c8a1f64e2d9b0357cc84e1a6b2f7d3905e8c6a4b1d7f2093",
+                      "Panamá", "Espectáculo Público"]) {
+    expect(pdf, dato).toContain(dato);
+  }
+  const inicio = Number(pdf.slice(pdf.lastIndexOf("startxref") + 9).trim().split(/\s/)[0]);
+  expect(pdf.slice(inicio, inicio + 4)).toBe("xref");            // el archivo abre en cualquier lector
+});
+
 test("Escape cierra el detalle y el foco vuelve al botón", async ({ page }) => {
   await page.getByRole("navigation", { name: /Secciones/ }).getByRole("button", { name: "Mis solicitudes" }).click();
   const abrir = page.getByRole("button", { name: "Ver detalle de EXP-2026-003914" });
