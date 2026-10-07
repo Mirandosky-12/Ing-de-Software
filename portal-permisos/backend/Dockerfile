@@ -25,7 +25,7 @@ RUN rm -rf /usr/local/lib/python3.13/site-packages/pip* /usr/local/bin/pip* \
 COPY --from=dependencias /opt/venv /opt/venv
 WORKDIR /app
 COPY main.py antivirus.py metricas.py bd.py tablas.py seguridad.py repositorio.py \
-     catalogo.py almacen.py migrar.py ./
+     catalogo.py almacen.py migrar.py constancia.py ./
 USER api
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \

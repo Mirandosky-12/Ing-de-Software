@@ -311,6 +311,57 @@ def test_el_catalogo_devuelve_los_35_tramites():
     assert len(client.get("/api/permisos").json()) == 35
 
 
+# ──────────────────────────── constancia ────────────────────────────
+
+def _expediente(cabecera, email: str = CUENTA["email"]) -> str:
+    sha = "e" * 64
+    _documento_de(email, sha)
+    return client.post("/api/solicitudes", json=_solicitud(sha), headers=cabecera).json()["codigo"]
+
+
+def test_la_constancia_es_un_pdf_con_codigo_huella_y_sello(cabecera):
+    codigo = _expediente(cabecera)
+    with bd.SesionLocal() as s:
+        sello = s.query(Bitacora).filter_by(accion="expediente.creado").one().hash
+
+    r = client.get(f"/api/solicitudes/{codigo}/constancia", headers=cabecera)
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/pdf"
+    assert f'filename="constancia-{codigo}.pdf"' in r.headers["content-disposition"]
+    pdf = r.content
+    assert pdf.startswith(b"%PDF-1.4") and pdf.rstrip().endswith(b"%%EOF")
+    for dato in (codigo.encode(), b"e" * 64, sello.encode(), b"Panam\xe1"):   # á en WinAnsi
+        assert dato in pdf
+    # startxref apunta a la tabla xref: el archivo abre en cualquier lector
+    inicio = int(pdf.rsplit(b"startxref", 1)[1].split()[0])
+    assert pdf[inicio:inicio + 4] == b"xref"
+
+
+def test_la_constancia_de_otro_solicitante_no_se_entrega(cabecera):
+    with bd.SesionLocal() as s:
+        otra = repositorio.crear_cuenta(s, nombre="Otra", apellido="Persona", edad=30,
+                                        organizacion="X", email="otra@correo.com",
+                                        cedula=None, password="clave-de-prueba")
+        token_otra = repositorio.abrir_sesion(s, otra)
+        s.commit()
+    codigo = _expediente({"Authorization": f"Bearer {token_otra}"}, "otra@correo.com")
+    r = client.get(f"/api/solicitudes/{codigo}/constancia", headers=cabecera)
+    assert r.status_code == 404
+
+
+def test_la_constancia_exige_sesion(cabecera):
+    codigo = _expediente(cabecera)
+    assert client.get(f"/api/solicitudes/{codigo}/constancia").status_code == 401
+
+
+def test_descargar_la_constancia_queda_en_la_bitacora(cabecera):
+    codigo = _expediente(cabecera)
+    client.get(f"/api/solicitudes/{codigo}/constancia", headers=cabecera)
+    with bd.SesionLocal() as s:
+        assert s.query(Bitacora).filter_by(accion="constancia.descargada").count() == 1
+    assert client.get("/api/bitacora/verificar").json()["integra"] is True
+
+
 # ──────────────────────────── citas ────────────────────────────
 
 def _proximo_lunes() -> str:

@@ -224,6 +224,21 @@ def expedientes_de(s: Session, cuenta: Cuenta, estado: str | None = None) -> lis
     return list(s.scalars(consulta))
 
 
+def expediente_de(s: Session, cuenta: Cuenta, codigo: str) -> Expediente | None:
+    """Sólo el expediente del propio solicitante: uno ajeno es igual a uno inexistente."""
+    return s.scalars(select(Expediente).where(Expediente.codigo == codigo,
+                                              Expediente.solicitante_id == cuenta.id)).first()
+
+
+def sello_de(s: Session, codigo: str) -> Bitacora | None:
+    """La entrada «expediente.creado» de la bitácora que selló este expediente."""
+    marca = _canonico({"codigo": codigo})[1:-1]          # '"codigo":"EXP-…"', tal como se guarda
+    return s.scalars(select(Bitacora)
+                     .where(Bitacora.accion == "expediente.creado",
+                            Bitacora.datos.contains(marca, autoescape=True))
+                     .order_by(Bitacora.n).limit(1)).first()
+
+
 def historial_de(s: Session, expediente: Expediente) -> list[Historial]:
     return list(s.scalars(select(Historial).where(Historial.expediente_id == expediente.id)
                           .order_by(Historial.id)))

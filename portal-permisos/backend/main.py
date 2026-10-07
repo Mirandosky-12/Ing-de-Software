@@ -11,6 +11,7 @@ Rutas:
     POST   /api/documentos/verificar       ClamAV + SHA-256  ← el paso 3 del portal
     POST   /api/solicitudes                crear expediente
     GET    /api/solicitudes                listar expedientes del usuario
+    GET    /api/solicitudes/{codigo}/constancia   constancia en PDF
     POST   /api/citas                      reservar turno
     POST   /api/contacto                   mensaje de contacto
     GET    /api/bitacora/verificar         integridad de la auditoría
@@ -42,6 +43,7 @@ from sqlalchemy.orm import Session
 import almacen
 import antivirus
 import bd
+import constancia
 import metricas
 import migrar
 import repositorio
@@ -348,6 +350,29 @@ def listar_solicitudes(
     s: Session = Depends(bd.sesion),
 ) -> list[dict]:
     return [repositorio.expediente_a_dict(e) for e in repositorio.expedientes_de(s, usuario, estado)]
+
+
+@app.get("/api/solicitudes/{codigo}/constancia", response_class=Response,
+         responses={200: {"content": {"application/pdf": {}}}})
+def descargar_constancia(
+    codigo: str,
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> Response:
+    """Constancia de recepción en PDF: datos, huella del documento y sello de la bitácora."""
+    expediente = repositorio.expediente_de(s, usuario, codigo)
+    if not expediente:
+        raise HTTPException(404, "No encontramos ese expediente entre tus solicitudes.")
+    sello = repositorio.sello_de(s, codigo)
+    pdf = constancia.generar(
+        repositorio.expediente_a_dict(expediente),
+        f"{usuario.nombre} {usuario.apellido}",
+        sello and {"n": sello.n, "ts": sello.ts, "hash": sello.hash, "previo": sello.previo},
+    )
+    repositorio.registrar(s, "constancia.descargada", usuario.email, codigo=codigo)
+    s.commit()
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="constancia-{codigo}.pdf"'})
 
 
 # ------------------------------------------------------------------ citas
