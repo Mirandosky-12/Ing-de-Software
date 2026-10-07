@@ -1,4 +1,5 @@
 # Levanta todo el sistema:
+#   portal       → el portal del ciudadano en nginx (puerto 5173)
 #   bd           → PostgreSQL 17 (sólo en la red interna, sin puerto al exterior)
 #   migraciones  → crea tablas, triggers y permisos con el rol dueño, y termina
 #   api          → la API con el rol mupa_app (puerto 8000)
@@ -6,6 +7,8 @@
 #   prometheus   → recolecta las métricas de la API (puerto 9090)
 #   grafana      → los tableros (puerto 3001, usuario admin / admin)
 #
+# Lo normal es levantarlo desde la raíz del repositorio con ./levantar.sh,
+# que crea las claves si faltan. A mano, desde esta carpeta:
 #   python generar_secretos.py        # una sola vez: crea secretos/
 #   docker compose up -d --build
 #
@@ -15,12 +18,27 @@
 # Base de pruebas para pytest -m postgres (en memoria, se borra al pararla):
 #   docker compose --profile pruebas up -d bd-pruebas
 
+name: mupa                       # mismo proyecto se levante desde aquí o desde la raíz
+
 x-endurecido: &endurecido
   security_opt:
     - no-new-privileges:true
   restart: unless-stopped
 
 services:
+  portal:
+    <<: *endurecido
+    image: mupa-portal:local
+    build: ..                    # portal-permisos/Dockerfile: nginx + index.html
+    container_name: mupa-portal
+    ports:
+      - "5173:8080"
+    networks: [app]
+    read_only: true
+    tmpfs: [/tmp]                # nginx guarda ahí su pid y sus temporales
+    cap_drop: [ALL]
+    mem_limit: 64m
+
   bd:
     <<: *endurecido
     image: postgres:17-alpine
