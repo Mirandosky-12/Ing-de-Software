@@ -1963,11 +1963,22 @@ const HORAS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
                "13:00","13:30","14:00","14:30","15:00","15:30"];
 let horaSel = null;
 
+// Los próximos n días hábiles a partir de mañana (ni sábado ni domingo).
+function diasHabiles(n){
+  const dias = [];
+  for (const d = new Date(); dias.length < n; ){
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() % 6) dias.push(new Date(d));            // ni domingo (0) ni sábado (6)
+  }
+  return dias;
+}
+
+// Se propone el tercer día hábil: «hoy + 3» caía en fin de semana de miércoles a viernes.
 $("#c-fecha").min = hoyISO(1);
-$("#c-fecha").value = hoyISO(3);
+$("#c-fecha").value = aISO(diasHabiles(3)[2]);
 
 function pintarSlots(){
-  const f = $("#c-fecha").value || hoyISO(3);
+  const f = $("#c-fecha").value || aISO(diasHabiles(3)[2]);
   // Ocupación determinista a partir de la fecha, para que el ejemplo sea estable.
   const semilla = f.split("-").reduce((a,b) => a + Number(b), 0);
   horaSel = null;
@@ -1979,12 +1990,8 @@ function pintarSlots(){
 }
 const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 function pintarAtajos(){
-  const elegida = $("#c-fecha").value, dias = [];
-  for (const d = new Date(); dias.length < 5; ){
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() % 6) dias.push(new Date(d));            // ni domingo (0) ni sábado (6)
-  }
-  $("#c-atajos").innerHTML = dias.map(d => {
+  const elegida = $("#c-fecha").value;
+  $("#c-atajos").innerHTML = diasHabiles(5).map(d => {
     const iso = aISO(d);
     return `<button type="button" class="chip" data-fecha="${iso}" aria-pressed="${iso === elegida}"
               aria-label="${DIAS[d.getDay()]} ${fechaLarga(iso)}">${DIAS[d.getDay()]} ${d.getDate()}</button>`;
