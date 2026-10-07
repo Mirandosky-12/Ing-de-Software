@@ -5,14 +5,16 @@ separan con `/`, nunca con `\`.
 
 ## 0. Lo que necesitas
 
-| Herramienta | Para qué | Cómo comprobarlo |
-|---|---|---|
-| Git | Bajar el proyecto | `git --version` |
-| Docker Desktop, **abierto** | Base de datos, API, ClamAV, Prometheus, Grafana | `docker info` (sin error) |
-| Node.js | Servir el portal y correr sus pruebas | `node -v` |
-| Python 3.13 | Claves y pruebas del backend | `py -3.13 --version` |
+Para **ver** el proyecto basta con:
 
-Python 3.14 no sirve todavía: las librerías fijadas no tienen paquetes para esa versión.
+| Herramienta | Cómo comprobarlo |
+|---|---|
+| Git | `git --version` |
+| Docker Desktop, **abierto** (o Docker Engine en Linux), con Compose 2.20 o más nuevo | `docker info` sin error y `docker compose version` |
+
+Todo lo demás (base de datos, API, portal, antivirus, monitoreo) corre en
+contenedores. Node.js y Python 3.13 sólo hacen falta para **correr las
+pruebas** (paso 6).
 
 ## 1. Bajar el proyecto y cambiar a la rama
 
@@ -26,55 +28,50 @@ git checkout prueba-local
 git pull
 ```
 
-## 2. Crear las claves (una sola vez por computadora)
+## 2. Levantar todo con un comando
+
+Desde la raíz del repositorio:
 
 ```bash
-cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos/monitoreo
-py -3.13 generar_secretos.py
+cd ~/Documents/PROYECTOING/Ing-de-Software
+./levantar.sh
 ```
 
-Crea `monitoreo/secretos/` (git lo ignora). Si dice «Ya existen… No se
-sobrescribe nada», las claves ya estaban: sigue con el paso 3.
+El script:
 
-## 3. Levantar el sistema
+1. comprueba que Docker responda;
+2. si faltan las claves, las crea en `portal-permisos/monitoreo/secretos/`
+   (git las ignora) con un contenedor de Python, sin instalar nada;
+3. construye las imágenes del portal y de la API y levanta los servicios;
+4. espera a que la API y el portal estén listos y muestra las direcciones.
 
-```bash
-cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos/monitoreo
-docker compose up -d --build
-docker compose ps -a
-```
-
-Espera hasta ver:
+La primera vez tarda unos minutos porque descarga las imágenes. Al final debe
+mostrar:
 
 | Servicio | Estado esperado |
 |---|---|
 | `migraciones` | `Exited (0)` |
-| `bd`, `api` | `Up … (healthy)` |
+| `portal`, `bd`, `api` | `Up … (healthy)` |
 | `clamav` | `healthy` (la primera vez tarda ~2 minutos en bajar sus firmas) |
 | `prometheus`, `grafana` | `Up` |
 
-Comprueba la API:
+Si las claves ya existen, `docker compose up -d --build` desde la raíz hace lo
+mismo que el script. Para ver el estado en cualquier momento:
 
 ```bash
-curl -s localhost:8000/salud; echo
+docker compose ps -a
+curl -s localhost:8000/salud; echo        # "estado":"ok" y la base "arriba":true
 ```
 
-Debe decir `"estado":"ok"` con `"base_de_datos":{"arriba":true,…}`.
+| Contenedor | Imagen | Qué corre |
+|---|---|---|
+| `mupa-portal` | `mupa-portal:local` (`portal-permisos/Dockerfile`) | nginx sin privilegios sirviendo `index.html` |
+| `mupa-api` | `mupa-api:local` (`portal-permisos/backend/Dockerfile`) | La API FastAPI |
+| `mupa-migraciones` | `mupa-api:local` | Crea tablas y permisos, y termina |
+| `mupa-bd` | `postgres:17-alpine` | La base, sin puerto al exterior |
+| `mupa-clamav`, `mupa-prometheus`, `mupa-grafana` | imágenes oficiales | Antivirus y monitoreo |
 
-## 4. Abrir el portal
-
-En **otra** terminal, que se queda abierta mientras usas el portal:
-
-```bash
-cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos
-npx serve -l 5173 .
-```
-
-> El servidor tiene que arrancar **desde `portal-permisos`**. Si el navegador
-> muestra «Files within …» (una lista de archivos), lo arrancaste en otra
-> carpeta: Ctrl+C y repite los dos comandos.
-
-## 5. Qué abrir en el navegador
+## 3. Qué abrir en el navegador
 
 | Dirección | Qué es | Acceso |
 |---|---|---|
@@ -86,7 +83,7 @@ npx serve -l 5173 .
 Si ves una versión vieja del portal, recarga con **Ctrl+F5**. Para la vista de
 celular: **F12** y luego **Ctrl+Shift+M**.
 
-## 6. Recorrido sugerido en el portal
+## 4. Recorrido sugerido en el portal
 
 1. **Inicio:** el aviso «Requiere tu atención» y los contadores (tócalos: llevan a la lista filtrada).
 2. **Solicitar permiso:** escribe «nocturno» en el buscador, avanza los pasos y deja un campo vacío para ver cómo el error señala el campo.
@@ -98,9 +95,9 @@ El portal todavía usa datos simulados: no está conectado a la API. Su
 constancia lleva un código de verificación; la de la API, además, el sello de
 la bitácora de auditoría.
 
-## 7. La constancia desde la API (con datos reales)
+## 5. La constancia desde la API (con datos reales)
 
-Con el sistema del paso 3 arriba, copia y pega bloque por bloque:
+Con el sistema del paso 2 arriba, copia y pega bloque por bloque:
 
 ```bash
 cd ~/Documents/PROYECTOING/Ing-de-Software
@@ -147,14 +144,18 @@ Comprueba que la bitácora sigue íntegra:
 curl -s localhost:8000/api/bitacora/verificar; echo
 ```
 
-## 8. Correr las pruebas
+## 6. Correr las pruebas
 
-**Backend** (79+ pruebas; las de ClamAV corren si el sistema está arriba):
+Aquí sí hacen falta **Python 3.13** (`py -3.13 --version`) y **Node.js**
+(`node -v`). Python 3.14 no sirve todavía: las librerías fijadas no tienen
+paquetes para esa versión.
+
+**Backend** (las de ClamAV corren si el sistema está arriba):
 
 ```bash
 cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos/backend
 py -3.13 -m venv .venv                      # sólo la primera vez
-source .venv/Scripts/activate
+source .venv/Scripts/activate               # macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt         # sólo la primera vez
 pytest -q
 ```
@@ -162,14 +163,14 @@ pytest -q
 **Contra PostgreSQL real** (18 pruebas de permisos, triggers y concurrencia):
 
 ```bash
-cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos/monitoreo
+cd ~/Documents/PROYECTOING/Ing-de-Software
 docker compose --profile pruebas up -d bd-pruebas
-cd ../backend
+cd portal-permisos/backend
 PRUEBAS_PG=1 pytest -m postgres -v
-cd ../monitoreo && docker compose --profile pruebas rm -sf bd-pruebas
+cd ../.. && docker compose --profile pruebas rm -sf bd-pruebas
 ```
 
-**Portal** (Playwright; con el servidor del paso 4 corriendo):
+**Portal** (Playwright, contra el contenedor del portal en el puerto 5173):
 
 ```bash
 cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos/calidad
@@ -179,28 +180,33 @@ npx playwright test                         # todas, en escritorio y celular
 npx playwright test --ui                    # ventana para verlas correr una por una
 ```
 
-## 9. Apagar todo
+Si cambias `index.html`, reconstruye el portal para ver el cambio:
+`docker compose up -d --build portal`.
 
-1. En la terminal del portal: **Ctrl+C**.
-2. El resto:
+## 7. Apagar todo
+
+Desde la raíz del repositorio:
 
 ```bash
-cd ~/Documents/PROYECTOING/Ing-de-Software/portal-permisos/monitoreo
+cd ~/Documents/PROYECTOING/Ing-de-Software
 docker compose down
 ```
 
-`docker compose down -v` también **borra los datos de la base**: úsalo sólo si
-quieres empezar de cero.
+Los datos de la base se conservan para la próxima vez. `docker compose down -v`
+también **borra los datos**: úsalo sólo si quieres empezar de cero.
 
-## 10. Si algo falla
+## 8. Si algo falla
 
 | Síntoma | Causa | Solución |
 |---|---|---|
+| `./levantar.sh: Permission denied` | El archivo perdió el permiso de ejecución | `sh levantar.sh` |
+| `Docker no responde` / `error during connect` | Docker Desktop cerrado | Ábrelo, espera a que diga *Running* y repite |
+| `migraciones` termina con `password authentication failed` | Volumen de una base anterior con otras claves | `docker compose down -v` (borra datos) y repite el paso 2 |
+| `port is already allocated` | Otro programa usa 5173, 8000, 3001, 9090 o 3310 | Ciérralo y repite el paso 2 |
+| `Conflict. The container name "/mupa-…" is already in use` | Quedaron contenedores de una versión anterior | `docker compose -p monitoreo down` y repite el paso 2 |
+| `include` no se reconoce en `compose.yaml` | Docker Compose anterior a 2.20 | Actualiza Docker Desktop |
+| El portal se ve viejo | El navegador guardó la versión anterior | Ctrl+F5 |
 | `cd: portal-permisosmonitoreo: No such file or directory` | Usaste `\` en Bash | Usa `/`: `cd portal-permisos/monitoreo` |
-| El navegador muestra «Files within …» | `npx serve` se arrancó fuera de `portal-permisos` | Ctrl+C y repite el paso 4 |
-| `migraciones` termina con `password authentication failed` | Volumen de una base anterior con otras claves | `docker compose down -v` (borra datos) y repite el paso 3 |
-| `docker: error during connect` | Docker Desktop cerrado | Ábrelo y espera a que diga *Running* |
-| `port is already allocated` / puerto ocupado | Otro programa usa 8000, 5173 o 3001 | Ciérralo, o usa otro puerto para el portal: `npx serve -l 5174 .` |
 | `docker compose exec bd psql …` falla con `Peer authentication failed` | La base sólo acepta al usuario de sistema `postgres` | Agrega `-u postgres`: `docker compose exec -u postgres bd psql -d mupa` |
 | Una ruta como `/app/x` se convierte en `C:/Program Files/Git/app/x` | Git Bash traduce rutas al llamar a Docker | Antepón `MSYS_NO_PATHCONV=1` al comando |
 | `pip install` falla con Python 3.14 | Faltan paquetes para 3.14 | Crea el entorno con `py -3.13 -m venv .venv` |

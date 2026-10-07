@@ -22,6 +22,8 @@ trazabilidad y auditoría.
 ```
 portal-permisos/
 ├── index.html                    Portal completo (frontend, sin dependencias)
+├── Dockerfile                    Imagen del portal: nginx sin privilegios
+├── nginx.conf                    Servidor del portal y encabezados de seguridad
 ├── backend/
 │   ├── main.py                   API FastAPI
 │   ├── repositorio.py            Todo el acceso a datos
@@ -43,7 +45,7 @@ portal-permisos/
 │   ├── tests/portal.spec.js      18 pruebas automatizadas del portal
 │   └── package.json
 ├── monitoreo/
-│   ├── docker-compose.yml        PostgreSQL + API + ClamAV + Prometheus + Grafana
+│   ├── docker-compose.yml        Portal + PostgreSQL + API + ClamAV + Prometheus + Grafana
 │   ├── generar_secretos.py       Crea las claves en secretos/ (fuera de git)
 │   ├── bd/01-roles.sh            Roles mupa_owner y mupa_app
 │   ├── prometheus.yml            Recolección de métricas
@@ -58,9 +60,27 @@ portal-permisos/
 
 ## Cómo levantarlo
 
+### Todo con un comando (recomendado)
+
+Sólo hace falta Docker. Desde la **raíz del repositorio**:
+
+```bash
+./levantar.sh
+```
+
+Crea las claves si faltan (con un contenedor de Python, sin instalar nada),
+construye las imágenes del portal y de la API, levanta todos los servicios y
+espera a que estén listos. El portal queda en http://localhost:5173 y la API en
+http://localhost:8000/docs. Para apagar: `docker compose down`.
+
+Las secciones siguientes explican cada pieza por separado. La guía paso a paso
+está en [docs/guia-ver-el-proyecto.md](../docs/guia-ver-el-proyecto.md).
+
 ### 1. El portal (sólo el frontend)
 
-`index.html` no necesita compilación ni servidor. Ábrelo en el navegador, o:
+En Docker corre en su propia imagen (`Dockerfile`: nginx sin privilegios,
+sólo lectura). Sin Docker, `index.html` no necesita compilación ni servidor.
+Ábrelo en el navegador, o:
 
 ```bash
 npx serve -l 5173 .
@@ -83,6 +103,7 @@ docker compose up -d --build
 
 | Servicio | Dirección | Credenciales |
 |---|---|---|
+| Portal | http://localhost:5173 | demo@mupa.gob.pa / demo1234 |
 | API | http://localhost:8000 | — |
 | PostgreSQL | sólo la red interna de Docker | `monitoreo/secretos/` |
 | ClamAV | `localhost:3310` | — |
