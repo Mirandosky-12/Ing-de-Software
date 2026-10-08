@@ -4,368 +4,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 
-<style>
-/* Layout: barra lateral fija con la navegación en escritorio, que colapsa a una
-   cinta de pestañas superior en móvil; las pantallas de acceso van centradas a una columna. */
-:root{
-  --bg:#f3f6f9;
-  --surface:#ffffff;
-  --surface-2:#e9eef4;
-  --ink:#15212c;
-  --ink-2:#556676;
-  --line:#d6dee7;
-  --brand:#0b4f8a;
-  --brand-2:#0a3f6f;
-  --brand-soft:#e2edf8;
-  --on-brand:#ffffff;
-  --accent:#b8701c;
-  --ok:#186b45;
-  --ok-soft:#dff0e7;
-  --warn:#8f5a00;
-  --warn-soft:#fbeed4;
-  --crit:#a52218;
-  --crit-soft:#fbe3e1;
-  --shadow:0 1px 2px rgba(21,33,44,.06), 0 8px 24px -16px rgba(21,33,44,.28);
-
-  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0c141b;
-    --surface:#131f28;
-    --surface-2:#1a2833;
-    --ink:#e7eef4;
-    --ink-2:#95a7b6;
-    --line:#26363f;
-    --brand:#4fa1e0;
-    --brand-2:#79bcf0;
-    --brand-soft:#14293b;
-    --on-brand:#08131c;
-    --accent:#dd9a45;
-    --ok:#52c48d;
-    --ok-soft:#12302a;
-    --warn:#dfb055;
-    --warn-soft:#2e2712;
-    --crit:#f0796c;
-    --crit-soft:#331a1a;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0c141b;
-  --surface:#131f28;
-  --surface-2:#1a2833;
-  --ink:#e7eef4;
-  --ink-2:#95a7b6;
-  --line:#26363f;
-  --brand:#4fa1e0;
-  --brand-2:#79bcf0;
-  --brand-soft:#14293b;
-  --on-brand:#08131c;
-  --accent:#dd9a45;
-  --ok:#52c48d;
-  --ok-soft:#12302a;
-  --warn:#dfb055;
-  --warn-soft:#2e2712;
-  --crit:#f0796c;
-  --crit-soft:#331a1a;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
-  color-scheme:dark;
-}
-
-*{box-sizing:border-box}
-body{
-  background:var(--bg);
-  color:var(--ink);
-  font-family:var(--body);
-  font-size:15px;
-  line-height:1.55;
-  -webkit-font-smoothing:antialiased;
-}
-h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
-h1{font-size:1.65rem;font-weight:700;letter-spacing:-.015em}
-h2{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
-h3{font-size:1rem;font-weight:600}
-p{margin:0}
-a{color:var(--brand)}
-button{font:inherit}
-:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.eyebrow{
-  font-family:var(--display);font-size:.7rem;font-weight:600;
-  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2);
-}
-.muted{color:var(--ink-2)}
-.small{font-size:.83rem}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-
-/* ---------- controles ---------- */
-.field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.field > label{font-size:.82rem;font-weight:600;color:var(--ink)}
-.field .hint{font-size:.76rem;color:var(--ink-2)}
-.req{color:var(--crit);font-weight:700}
-input[type=text],input[type=email],input[type=password],input[type=number],
-input[type=date],input[type=time],input[type=tel],select,textarea{
-  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
-  background:var(--surface);color:var(--ink);font:inherit;font-size:.92rem;
-}
-textarea{resize:vertical;min-height:88px}
-input:invalid:not(:placeholder-shown){border-color:var(--crit)}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:9px 18px;border-radius:7px;border:1px solid transparent;
-  background:var(--brand);color:var(--on-brand);font-weight:600;font-size:.9rem;cursor:pointer;
-  transition:filter .15s ease, background .15s ease;
-}
-.btn:hover{filter:brightness(1.08)}
-.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
-.btn.ghost{background:transparent;color:var(--brand);border-color:var(--line)}
-.btn.ghost:hover{background:var(--surface-2)}
-.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px}
-.btn.plain:hover{color:var(--ink);background:var(--surface-2)}
-.btn.wide{width:100%}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-.row > *{flex:1 1 220px;min-width:0}
-.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-
-.card{
-  background:var(--surface);border:1px solid var(--line);border-radius:12px;
-  padding:20px;box-shadow:var(--shadow);
-}
-.pill{
-  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
-  font-size:.74rem;font-weight:600;letter-spacing:.02em;white-space:nowrap;
-}
-.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.pill.ok{background:var(--ok-soft);color:var(--ok)}
-.pill.warn{background:var(--warn-soft);color:var(--warn)}
-.pill.crit{background:var(--crit-soft);color:var(--crit)}
-.pill.info{background:var(--brand-soft);color:var(--brand)}
-
-/* ---------- pantallas de acceso ---------- */
-.auth{min-height:100%;display:grid;grid-template-columns:1fr;align-items:start}
-.auth-wrap{width:100%;max-width:1040px;margin:0 auto;padding-block:32px 48px;
-  display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
-@media (max-width:860px){.auth-wrap{grid-template-columns:1fr;gap:28px;padding-block:24px 36px}}
-.seal{
-  width:52px;height:52px;border-radius:50%;flex:none;
-  border:2px solid var(--brand);display:grid;place-items:center;
-  font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--brand);
-  letter-spacing:.02em;background:var(--brand-soft);
-}
-.brandline{display:flex;gap:14px;align-items:center;margin-bottom:22px}
-.brandline .t1{font-family:var(--display);font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
-.brandline .t2{font-size:.78rem;color:var(--ink-2)}
-.hero-h{font-size:clamp(1.9rem,4.4vw,2.7rem);font-weight:700;letter-spacing:-.025em;margin-bottom:12px}
-.hero-h em{font-style:normal;color:var(--brand)}
-.hero-p{color:var(--ink-2);max-width:46ch;margin-bottom:24px}
-.facts{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.facts div{background:var(--bg);padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
-.facts dt{font-size:.82rem;color:var(--ink-2)}
-.facts dd{margin:0;font-family:var(--mono);font-size:.86rem;font-weight:500;text-align:right}
-
-.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:9px;margin-bottom:20px}
-.tabs button{
-  flex:1;padding:8px;border:0;border-radius:6px;background:transparent;
-  color:var(--ink-2);font-weight:600;font-size:.87rem;cursor:pointer;
-}
-.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
-
-.demo-note{
-  margin-top:14px;padding:10px 12px;border-radius:8px;border:1px dashed var(--line);
-  background:var(--surface-2);font-size:.79rem;color:var(--ink-2);
-}
-.demo-note b{color:var(--ink);font-family:var(--mono);font-weight:500}
-
-/* ---------- shell de la aplicación ---------- */
-.shell{display:grid;grid-template-columns:238px 1fr;min-height:100%}
-@media (max-width:900px){.shell{grid-template-columns:1fr}}
-.side{
-  border-right:1px solid var(--line);background:var(--surface);
-  padding:22px 16px;display:flex;flex-direction:column;gap:22px;
-  position:sticky;top:env(safe-area-inset-top,0px);height:100%;
-}
-@media (max-width:900px){
-  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);
-    padding:14px 16px;gap:14px}
-}
-.side .who{display:flex;gap:10px;align-items:center;min-width:0}
-.avatar{
-  width:36px;height:36px;border-radius:9px;flex:none;display:grid;place-items:center;
-  background:var(--brand);color:var(--on-brand);font-family:var(--display);font-weight:700;font-size:.85rem;
-}
-.who .n{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who .o{font-size:.74rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-nav.menu{display:flex;flex-direction:column;gap:2px}
-@media (max-width:900px){
-  nav.menu{flex-direction:row;overflow-x:auto;gap:4px;scrollbar-width:none}
-  nav.menu::-webkit-scrollbar{display:none}
-}
-nav.menu button{
-  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-  padding:9px 11px;border:0;border-radius:8px;background:transparent;
-  color:var(--ink-2);font-weight:500;font-size:.89rem;cursor:pointer;white-space:nowrap;
-}
-nav.menu button:hover{background:var(--surface-2);color:var(--ink)}
-nav.menu button[aria-current="page"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
-nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;
-  stroke-linecap:round;stroke-linejoin:round}
-.side .foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
-@media (max-width:900px){.side .foot{display:none}}
-.opsbar{font-size:.7rem;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;
-  padding-top:12px;border-top:1px solid var(--line)}
-.opsbar span{display:flex;align-items:center;gap:6px}
-.dot-ok{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
-
-.main{padding:28px 24px 64px;min-width:0}
-@media (max-width:640px){.main{padding:20px 16px 56px}}
-.main-in{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
-.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
-.page-head p{color:var(--ink-2);max-width:58ch;margin-top:4px;font-size:.92rem}
-
-/* ---------- tarjetas de indicadores ---------- */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 15px;
-  display:flex;flex-direction:column;gap:2px}
-.stat .v{font-family:var(--display);font-size:1.75rem;font-weight:700;line-height:1;
-  font-variant-numeric:tabular-nums}
-.stat .k{font-size:.76rem;color:var(--ink-2)}
-.stat.s-ok .v{color:var(--ok)} .stat.s-warn .v{color:var(--warn)} .stat.s-crit .v{color:var(--crit)}
-
-/* ---------- lista de expedientes ---------- */
-.exp-list{display:flex;flex-direction:column;gap:10px}
-.exp{
-  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);
-  border-radius:10px;padding:14px 16px;display:grid;
-  grid-template-columns:1fr auto;gap:8px 16px;align-items:start;
-}
-.exp.st-ok{border-left-color:var(--ok)} .exp.st-warn{border-left-color:var(--warn)}
-.exp.st-crit{border-left-color:var(--crit)} .exp.st-info{border-left-color:var(--brand)}
-.exp .code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);letter-spacing:.01em}
-.exp .name{font-weight:600;font-size:.94rem;margin-top:1px}
-.exp .meta{font-size:.79rem;color:var(--ink-2);margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
-.exp .meta i{font-style:normal}
-.exp .meta i::after{content:"·";margin-left:6px;color:var(--line)}
-.exp .meta i:last-child::after{content:""}
-
-/* ---------- asistente de solicitud ---------- */
-.stepper{display:flex;gap:0;margin-bottom:4px;overflow-x:auto;scrollbar-width:none}
-.stepper::-webkit-scrollbar{display:none}
-.stepper .s{display:flex;align-items:center;gap:8px;padding-right:14px;white-space:nowrap}
-.stepper .s + .s{padding-left:14px;border-left:1px solid var(--line)}
-.stepper .num{
-  width:23px;height:23px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-family:var(--mono);font-size:.74rem;font-weight:500;
-  border:1px solid var(--line);color:var(--ink-2);background:var(--surface);
-}
-.stepper .s[data-state="on"] .num{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
-.stepper .s[data-state="done"] .num{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
-.stepper .lbl{font-size:.8rem;color:var(--ink-2);font-weight:500}
-.stepper .s[data-state="on"] .lbl{color:var(--ink);font-weight:600}
-
-.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-.cat{
-  text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:10px;
-  background:var(--surface);cursor:pointer;color:var(--ink);
-  display:flex;flex-direction:column;gap:3px;
-}
-.cat:hover{border-color:var(--brand);background:var(--brand-soft)}
-.cat[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
-.cat .cn{font-weight:600;font-size:.9rem}
-.cat .cc{font-size:.76rem;color:var(--ink-2)}
-
-.opt-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;
-  padding-right:4px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface)}
-.opt{
-  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
-  padding:10px 11px;border-radius:8px;border:1px solid transparent;cursor:pointer;background:transparent;
-  text-align:left;color:var(--ink);
-}
-.opt:hover{background:var(--surface-2)}
-.opt[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand)}
-.opt .radio{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex:none}
-.opt[aria-pressed="true"] .radio{border-color:var(--brand);border-width:4.5px}
-.opt .on{font-size:.88rem;font-weight:500;line-height:1.35}
-.opt .od{font-size:.74rem;color:var(--ink-2);margin-top:1px}
-.opt .days{font-family:var(--mono);font-size:.73rem;color:var(--ink-2);white-space:nowrap}
-
-.req-box{background:var(--surface-2);border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
-.req-box ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
-.req-box li{font-size:.85rem;color:var(--ink-2)}
-.req-box li b{color:var(--ink);font-weight:600}
-
-/* ---------- carga de documentos ---------- */
-.drop{
-  border:1.5px dashed var(--line);border-radius:11px;padding:26px 18px;text-align:center;
-  background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;
-}
-.drop:hover,.drop.over{border-color:var(--brand);background:var(--brand-soft)}
-.drop svg{width:26px;height:26px;stroke:var(--brand);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.drop .d1{font-weight:600;font-size:.92rem}
-.drop .d2{font-size:.78rem;color:var(--ink-2)}
-
-.scan{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
-.scan-h{display:flex;justify-content:space-between;gap:12px;align-items:center;
-  padding:11px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);flex-wrap:wrap}
-.scan-h .fn{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.checks{display:flex;flex-direction:column}
-.chk{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;
-  padding:9px 14px;font-size:.84rem;border-top:1px solid var(--line)}
-.chk:first-child{border-top:0}
-.chk .ic{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;
-  font-size:.65rem;font-weight:700;background:var(--surface-2);color:var(--ink-2);font-family:var(--mono)}
-.chk[data-s="run"] .ic{background:var(--brand-soft);color:var(--brand)}
-.chk[data-s="ok"] .ic{background:var(--ok-soft);color:var(--ok)}
-.chk[data-s="bad"] .ic{background:var(--crit-soft);color:var(--crit)}
-.chk .cv{font-family:var(--mono);font-size:.72rem;color:var(--ink-2);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(42vw,300px)}
-.chk[data-s="bad"] .cv{color:var(--crit)}
-@keyframes spin{to{transform:rotate(360deg)}}
-.chk[data-s="run"] .ic{animation:spin 1s linear infinite}
-@media (prefers-reduced-motion: reduce){.chk[data-s="run"] .ic{animation:none}}
-
-/* ---------- resumen ---------- */
-.summary{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.summary .r{background:var(--surface);padding:11px 14px;display:grid;grid-template-columns:170px 1fr;gap:12px}
-@media (max-width:560px){.summary .r{grid-template-columns:1fr;gap:2px}}
-.summary dt{font-size:.8rem;color:var(--ink-2)}
-.summary dd{margin:0;font-size:.88rem;font-weight:500;overflow-wrap:anywhere}
-
-/* ---------- citas ---------- */
-.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
-.slot{padding:9px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);
-  font-family:var(--mono);font-size:.82rem;cursor:pointer;color:var(--ink)}
-.slot:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft)}
-.slot[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:500}
-.slot:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
-
-/* ---------- avisos ---------- */
-.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.85rem;align-items:flex-start}
-.notice.ok{background:var(--ok-soft);color:var(--ok)}
-.notice.crit{background:var(--crit-soft);color:var(--crit)}
-.notice.info{background:var(--brand-soft);color:var(--brand)}
-.notice b{font-weight:600}
-
-.toast{
-  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));
-  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;
-  font-size:.86rem;font-weight:500;z-index:60;box-shadow:0 8px 28px -10px rgba(0,0,0,.5);
-}
-.divider{height:1px;background:var(--line);border:0;margin:0}
-.kv{display:flex;flex-direction:column;gap:2px}
-.kv .k{font-size:.74rem;color:var(--ink-2)}
-.kv .v{font-size:.9rem;font-weight:500}
-.copyable{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.copyable .v{font-family:var(--mono);font-size:.85rem;user-select:all}
-</style>
+<link rel="stylesheet" href="style.css">
 
 <!-- =================== ACCESO =================== -->
 <div id="view-auth" class="auth">
-  <div class="auth-wrap" style="padding-inline:16px">
+  <div class="auth-wrap layout-35">
 
     <section>
       <div class="brandline">
@@ -385,14 +28,14 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
       </dl>
     </section>
 
-    <section class="card" style="padding:24px">
+    <section class="card layout-34">
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-login" aria-selected="true" aria-controls="pane-login">Iniciar sesión</button>
         <button role="tab" id="tab-signup" aria-selected="false" aria-controls="pane-signup">Crear cuenta</button>
       </div>
 
       <!-- Inicio de sesión -->
-      <form id="pane-login" role="tabpanel" aria-labelledby="tab-login" style="display:flex;flex-direction:column;gap:14px" novalidate>
+      <form id="pane-login" role="tabpanel" aria-labelledby="tab-login" novalidate class="layout-33">
         <h2>Entrar al portal</h2>
         <div class="field">
           <label for="li-email">Correo electrónico <span class="req">*</span></label>
@@ -404,7 +47,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         </div>
         <div id="li-err" class="notice crit" hidden><span>⚠</span><span></span></div>
         <button class="btn wide" type="submit">Iniciar sesión</button>
-        <p class="small muted" style="text-align:center">
+        <p class="small muted layout-30">
           ¿No tienes cuenta? <a href="#crear" id="go-signup">Créala aquí</a>
         </p>
         <div class="demo-note">
@@ -413,7 +56,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
       </form>
 
       <!-- Creación de cuenta -->
-      <form id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" hidden style="flex-direction:column;gap:13px" novalidate>
+      <form id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" hidden novalidate class="layout-32">
         <h2>Crear cuenta</h2>
         <p class="small muted">Todos los campos marcados con <span class="req">*</span> son obligatorios.</p>
         <div class="row">
@@ -456,13 +99,13 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             <input id="su-pass2" type="password" autocomplete="new-password" placeholder="Repite la contraseña" required>
           </div>
         </div>
-        <label style="display:flex;gap:9px;align-items:flex-start;font-size:.82rem;color:var(--ink-2)">
-          <input id="su-ok" type="checkbox" required style="margin-top:3px;width:auto">
-          <span>Autorizo el tratamiento de mis datos conforme a la <b style="color:var(--ink)">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
+        <label class="layout-31">
+          <input id="su-ok" type="checkbox" required class="layout-20">
+          <span>Autorizo el tratamiento de mis datos conforme a la <b class="layout-19">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
         </label>
         <div id="su-err" class="notice crit" hidden><span>⚠</span><span></span></div>
         <button class="btn wide" type="submit">Crear cuenta y entrar</button>
-        <p class="small muted" style="text-align:center">
+        <p class="small muted layout-30">
           ¿Ya tienes cuenta? <a href="#entrar" id="go-login">Inicia sesión</a>
         </p>
       </form>
@@ -473,11 +116,11 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
 <!-- =================== APLICACIÓN =================== -->
 <div id="view-app" class="shell" hidden>
   <aside class="side">
-    <div class="brandline" style="margin:0;gap:10px">
-      <div class="seal" style="width:38px;height:38px;font-size:.75rem" aria-hidden="true">MP</div>
-      <div style="min-width:0">
-        <div class="t1" style="font-size:.9rem">Ventanilla Única</div>
-        <div class="t2" style="font-size:.72rem">Municipio de Panamá</div>
+    <div class="brandline layout-29">
+      <div class="seal layout-28" aria-hidden="true">MP</div>
+      <div class="layout-1">
+        <div class="t1 layout-27">Ventanilla Única</div>
+        <div class="t2 layout-26">Municipio de Panamá</div>
       </div>
     </div>
 
@@ -497,13 +140,13 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
     <div class="foot">
       <div class="who">
         <div class="avatar" id="u-ini">DL</div>
-        <div style="min-width:0">
+        <div class="layout-1">
           <div class="n" id="u-name">—</div>
           <div class="o" id="u-org">—</div>
         </div>
       </div>
-      <button class="btn plain" id="btn-theme" style="justify-content:flex-start">Cambiar tema</button>
-      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">Cerrar sesión</button>
+      <button class="btn plain layout-25" id="btn-theme">Cambiar tema</button>
+      <button class="btn plain layout-25" id="btn-logout">Cerrar sesión</button>
       <div class="opsbar">
         <span><i class="dot-ok"></i>Antivirus documental activo</span>
         <span><i class="dot-ok"></i>Monitoreo de servicio en línea</span>
@@ -525,15 +168,15 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           <button class="btn" data-nav="solicitar">Nueva solicitud</button>
         </div>
 
-        <div class="stats" style="margin-top:20px">
+        <div class="stats layout-24">
           <div class="stat"><span class="v" id="k-total">0</span><span class="k">Expedientes</span></div>
           <div class="stat s-warn"><span class="v" id="k-rev">0</span><span class="k">En revisión</span></div>
           <div class="stat s-ok"><span class="v" id="k-apr">0</span><span class="k">Aprobados</span></div>
           <div class="stat s-crit"><span class="v" id="k-sub">0</span><span class="k">Subsanación</span></div>
         </div>
 
-        <div style="margin-top:22px">
-          <h2 style="margin-bottom:10px">Movimiento reciente</h2>
+        <div class="layout-10">
+          <h2 class="layout-9">Movimiento reciente</h2>
           <div class="exp-list" id="recent"></div>
         </div>
       </section>
@@ -548,7 +191,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
         </div>
 
-        <div class="stepper" id="stepper" style="margin-top:18px">
+        <div class="stepper layout-16" id="stepper">
           <div class="s" data-state="on"><span class="num">1</span><span class="lbl">Tipo de permiso</span></div>
           <div class="s"><span class="num">2</span><span class="lbl">Datos del acto</span></div>
           <div class="s"><span class="num">3</span><span class="lbl">Documentos</span></div>
@@ -556,30 +199,30 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
         </div>
 
         <!-- Paso 1 -->
-        <div class="card" data-step="1" style="margin-top:14px;display:flex;flex-direction:column;gap:16px">
+        <div class="card layout-23" data-step="1">
           <div>
             <h2>¿Qué tipo de permiso necesitas?</h2>
-            <p class="small muted" style="margin-top:4px">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
+            <p class="small muted layout-22">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
           </div>
           <div>
             <span class="eyebrow">1 · Categoría</span>
-            <div class="cat-grid" id="cats" style="margin-top:8px"></div>
+            <div class="cat-grid layout-11" id="cats"></div>
           </div>
           <div id="perm-wrap" hidden>
             <span class="eyebrow">2 · Permiso específico</span>
-            <div class="opt-list" id="perms" style="margin-top:8px"></div>
+            <div class="opt-list layout-11" id="perms"></div>
           </div>
           <div id="req-wrap" hidden></div>
-          <div class="actions" style="justify-content:flex-end">
+          <div class="actions layout-6">
             <button class="btn" id="s1-next" disabled>Continuar</button>
           </div>
         </div>
 
         <!-- Paso 2 -->
-        <form class="card" data-step="2" hidden style="margin-top:14px;flex-direction:column;gap:16px" novalidate>
+        <form class="card layout-17" data-step="2" hidden novalidate>
           <div>
             <h2>Datos del acto</h2>
-            <p class="small muted" style="margin-top:4px" id="s2-sub">—</p>
+            <p class="small muted layout-22" id="s2-sub">—</p>
           </div>
 
           <div class="row">
@@ -638,17 +281,17 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
 
           <div id="s2-err" class="notice crit" hidden><span>⚠</span><span></span></div>
-          <div class="actions" style="justify-content:space-between">
+          <div class="actions layout-18">
             <button class="btn ghost" type="button" data-back="1">Atrás</button>
             <button class="btn" type="submit">Continuar</button>
           </div>
         </form>
 
         <!-- Paso 3 -->
-        <div class="card" data-step="3" hidden style="margin-top:14px;flex-direction:column;gap:16px">
+        <div class="card layout-17" data-step="3" hidden>
           <div>
             <h2>Documentación de respaldo</h2>
-            <p class="small muted" style="margin-top:4px">Un solo archivo <b>PDF</b> de hasta 10&nbsp;MB con los requisitos del permiso seleccionado. El archivo pasa por cinco verificaciones antes de adjuntarse al expediente.</p>
+            <p class="small muted layout-22">Un solo archivo <b>PDF</b> de hasta 10&nbsp;MB con los requisitos del permiso seleccionado. El archivo pasa por cinco verificaciones antes de adjuntarse al expediente.</p>
           </div>
 
           <div id="req-wrap-3"></div>
@@ -675,31 +318,31 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
 
           <div id="s3-err" class="notice crit" hidden><span>⚠</span><span></span></div>
-          <div class="actions" style="justify-content:space-between">
+          <div class="actions layout-18">
             <button class="btn ghost" type="button" data-back="2">Atrás</button>
             <button class="btn" id="s3-next" disabled>Continuar</button>
           </div>
         </div>
 
         <!-- Paso 4 -->
-        <div class="card" data-step="4" hidden style="margin-top:14px;flex-direction:column;gap:16px">
+        <div class="card layout-17" data-step="4" hidden>
           <div>
             <h2>Revisa antes de enviar</h2>
-            <p class="small muted" style="margin-top:4px">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
+            <p class="small muted layout-22">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
           </div>
           <dl class="summary" id="sum"></dl>
-          <label style="display:flex;gap:9px;align-items:flex-start;font-size:.83rem;color:var(--ink-2)">
-            <input id="s4-ok" type="checkbox" style="margin-top:3px;width:auto">
-            <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b style="color:var(--ink)">Acuerdo Municipal N.° 130 de 2016</b>.</span>
+          <label class="layout-21">
+            <input id="s4-ok" type="checkbox" class="layout-20">
+            <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b class="layout-19">Acuerdo Municipal N.° 130 de 2016</b>.</span>
           </label>
-          <div class="actions" style="justify-content:space-between">
+          <div class="actions layout-18">
             <button class="btn ghost" type="button" data-back="3">Atrás</button>
             <button class="btn" id="s4-send" disabled>Enviar solicitud</button>
           </div>
         </div>
 
         <!-- Comprobante -->
-        <div class="card" data-step="5" hidden style="margin-top:14px;flex-direction:column;gap:16px">
+        <div class="card layout-17" data-step="5" hidden>
           <div class="notice ok"><span>✓</span><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
           <dl class="summary" id="receipt"></dl>
           <div class="actions">
@@ -719,8 +362,8 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
           <button class="btn ghost" data-nav="solicitar">Nueva solicitud</button>
         </div>
-        <div class="row" style="margin-top:18px">
-          <div class="field" style="flex:2 1 260px">
+        <div class="row layout-16">
+          <div class="field layout-15">
             <label for="q">Buscar por expediente o permiso</label>
             <input id="q" type="text" placeholder="Ej. EXP-2026 o «espectáculo»">
           </div>
@@ -735,8 +378,8 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             </select>
           </div>
         </div>
-        <div class="exp-list" id="all-exp" style="margin-top:16px"></div>
-        <p class="small muted" id="no-exp" hidden style="text-align:center;padding:24px">No hay expedientes que coincidan con la búsqueda.</p>
+        <div class="exp-list layout-14" id="all-exp"></div>
+        <p class="small muted layout-13" id="no-exp" hidden>No hay expedientes que coincidan con la búsqueda.</p>
       </section>
 
       <!-- ---------- CITAS ---------- -->
@@ -749,7 +392,7 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
         </div>
 
-        <form class="card" id="cita-form" style="margin-top:18px;flex-direction:column;gap:16px;display:flex" novalidate>
+        <form class="card layout-12" id="cita-form" novalidate>
           <div class="row">
             <div class="field">
               <label for="c-sede">Sede <span class="req">*</span></label>
@@ -788,17 +431,17 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
           <div>
             <span class="eyebrow">Horarios disponibles</span>
-            <div class="slots" id="slots" style="margin-top:8px"></div>
-            <p class="small muted" style="margin-top:8px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m. Los tachados ya están ocupados.</p>
+            <div class="slots layout-11" id="slots"></div>
+            <p class="small muted layout-11">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m. Los tachados ya están ocupados.</p>
           </div>
           <div id="c-err" class="notice crit" hidden><span>⚠</span><span></span></div>
-          <div class="actions" style="justify-content:flex-end">
+          <div class="actions layout-6">
             <button class="btn" type="submit">Confirmar cita</button>
           </div>
         </form>
 
-        <div style="margin-top:22px">
-          <h2 style="margin-bottom:10px">Citas reservadas</h2>
+        <div class="layout-10">
+          <h2 class="layout-9">Citas reservadas</h2>
           <div class="exp-list" id="citas-list"></div>
           <p class="small muted" id="no-citas" hidden>Aún no tienes citas reservadas.</p>
         </div>
@@ -814,8 +457,8 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
           </div>
         </div>
 
-        <div class="row" style="margin-top:18px;align-items:stretch">
-          <form class="card" id="ct-form" style="flex:2 1 380px;display:flex;flex-direction:column;gap:14px" novalidate>
+        <div class="row layout-8">
+          <form class="card layout-7" id="ct-form" novalidate>
             <h2>Enviar un mensaje</h2>
             <div class="row">
               <div class="field">
@@ -850,12 +493,12 @@ nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stro
             </div>
             <div id="ct-err" class="notice crit" hidden><span>⚠</span><span></span></div>
             <div id="ct-ok" class="notice ok" hidden><span>✓</span><span></span></div>
-            <div class="actions" style="justify-content:flex-end">
+            <div class="actions layout-6">
               <button class="btn" type="submit">Enviar mensaje</button>
             </div>
           </form>
 
-          <div class="card" style="flex:1 1 260px;display:flex;flex-direction:column;gap:16px">
+          <div class="card layout-5">
             <h2>Otros canales</h2>
             <div class="kv">
               <span class="k">Central telefónica</span>
@@ -1104,8 +747,8 @@ function mostrarPanel(cual){
   $("#tab-signup").setAttribute("aria-selected", !login);
   $("#pane-login").hidden = !login;
   $("#pane-signup").hidden = login;
-  $("#pane-login").style.display = login ? "flex" : "none";
-  $("#pane-signup").style.display = login ? "none" : "flex";
+  $("#pane-login").classList.add("display-flex");
+  $("#pane-signup").classList.add("display-flex");
 }
 $("#tab-login").addEventListener("click", () => mostrarPanel("login"));
 $("#tab-signup").addEventListener("click", () => mostrarPanel("signup"));
@@ -1199,7 +842,7 @@ document.addEventListener("click", e => {
 
 function tarjetaExpediente(x){
   return `<article class="exp st-${estadoClase(x.estado)}">
-    <div style="min-width:0">
+    <div class="layout-1">
       <div class="code">${esc(x.code)}</div>
       <div class="name">${esc(x.permiso)}</div>
       <div class="meta"><i>${esc(x.lugar)}</i><i>${fechaLarga(x.fecha)}</i><i>${esc(x.etapa)}</i></div>
@@ -1277,7 +920,7 @@ function requisitosHTML(p){
   return `<div class="req-box">
     <span class="eyebrow">Requisitos · ${esc(p.n)}</span>
     <ul>${p.req.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
-    <p class="small muted" style="margin-top:10px">Reúne estos documentos en <b>un solo archivo PDF</b>.
+    <p class="small muted layout-4">Reúne estos documentos en <b>un solo archivo PDF</b>.
       Plazo estimado de resolución: <b>${p.d} días hábiles</b>.</p>
   </div>`;
 }
@@ -1445,7 +1088,7 @@ $("#s3-next").addEventListener("click", () => {
     ["Responsable en sitio", `${d.resp} · ${d.tel}`],
     ["Motivo", d.motivo],
     ["Documento adjunto", `${doc.nombre} (${doc.mb} MB) · verificado`],
-    ["Huella SHA-256", `<span class="mono" style="font-size:.76rem">${doc.hash}</span>`],
+    ["Huella SHA-256", `<span class="mono layout-2">${doc.hash}</span>`],
     ["Plazo estimado", `${p.d} días hábiles`]
   ].map(([k,v]) => `<div class="r"><dt>${esc(k)}</dt><dd>${k === "Huella SHA-256" ? v : esc(v)}</dd></div>`).join("");
   paso(4);
@@ -1462,11 +1105,11 @@ $("#s4-send").addEventListener("click", () => {
     creado:hoyISO(), hash:doc.hash
   });
   $("#receipt").innerHTML = [
-    ["Número de expediente", `<span class="mono" style="font-weight:600">${esc(code)}</span>`],
+    ["Número de expediente", `<span class="mono layout-3">${esc(code)}</span>`],
     ["Permiso", esc(p.n)],
     ["Recibido el", fechaLarga(hoyISO())],
     ["Estado", "Recibido"],
-    ["Documento sellado", `<span class="mono" style="font-size:.76rem">${esc(doc.hash)}</span>`],
+    ["Documento sellado", `<span class="mono layout-2">${esc(doc.hash)}</span>`],
     ["Resolución estimada", `${p.d} días hábiles`]
   ].map(([k,v]) => `<div class="r"><dt>${k}</dt><dd>${v}</dd></div>`).join("");
   pintarTodo();
@@ -1494,7 +1137,7 @@ function reiniciarAsistente(){
 function paso(n){
   state.step = n;
   for (let i = 1; i <= 5; i++) $(`[data-step="${i}"]`).hidden = i !== n;
-  $(`[data-step="${n}"]`).style.display = "flex";
+  $(`[data-step="${n}"]`).classList.add("display-flex");
   $$("#stepper .s").forEach((s, i) => {
     s.dataset.state = n > 4 ? "done" : (i + 1 === n ? "on" : i + 1 < n ? "done" : "");
     if (i + 1 < n || n > 4) s.querySelector(".num").textContent = "✓";
@@ -1558,7 +1201,7 @@ $("#cita-form").addEventListener("submit", e => {
 function pintarCitas(){
   $("#citas-list").innerHTML = state.citas.map(c =>
     `<article class="exp st-info">
-      <div style="min-width:0">
+      <div class="layout-1">
         <div class="code">Turno ${esc(c.turno)}${c.exp ? " · " + esc(c.exp.split(" — ")[0]) : ""}</div>
         <div class="name">${esc(c.motivo)}</div>
         <div class="meta"><i>${esc(c.sede)}</i><i>${fechaLarga(c.fecha)}</i><i>${esc(c.hora)}</i></div>
