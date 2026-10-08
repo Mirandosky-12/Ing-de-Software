@@ -108,7 +108,9 @@ services:
     mem_limit: 256m
 
   clamav:
-    image: clamav/clamav:1.4     # basada en Alpine; la etiqueta 1.4-bookworm no existe
+    # La variante Debian existe para amd64 y arm64 (Mac con chip Apple);
+    # clamav/clamav (Alpine) sólo para amd64.
+    image: clamav/clamav-debian:1.4
     container_name: mupa-clamav
     ports:
       - "3310:3310"
