@@ -89,6 +89,33 @@ debe mostrar:
 Las claves son **propias de cada máquina**: cada persona tiene las suyas y
 nunca se suben a git. No copies la carpeta `secretos/` de otra computadora.
 
+### Si un puerto ya está ocupado
+
+Antes de levantar, el script revisa que los puertos estén libres. Si otro
+programa usa alguno (es común con 3000/3001, 8000 o 5173), se detiene y te
+dice cuál y cómo cambiarlo:
+
+```text
+Estos puertos ya los usa otro programa en tu máquina: GRAFANA:3001
+Ciérralo, o elige otro puerto al levantar. Por ejemplo:
+  PUERTO_GRAFANA=3002 ./levantar.sh
+```
+
+| Variable | Servicio | Puerto por defecto |
+|---|---|---|
+| `PUERTO_PORTAL` | Portal | 5173 |
+| `PUERTO_API` | API | 8000 |
+| `PUERTO_GRAFANA` | Grafana | 3001 |
+| `PUERTO_PROMETHEUS` | Prometheus | 9090 |
+| `PUERTO_CLAMAV` | ClamAV | 3310 |
+
+Se pueden combinar: `PUERTO_PORTAL=5174 PUERTO_GRAFANA=3002 ./levantar.sh`.
+Usa los mismos valores cada vez que levantes, y cambia las direcciones del
+paso 3 por los puertos que elegiste. Si cambias el puerto de la API, en los
+comandos del paso 5 reemplaza `localhost:8000` por el tuyo. Si cambias el del
+portal, las pruebas de Playwright necesitan saberlo:
+`BASE_URL=http://localhost:5174 npx playwright test`.
+
 Si las claves ya existen, `docker compose up -d --build` desde la raíz hace lo
 mismo que el script. Para ver el estado en cualquier momento:
 
@@ -260,7 +287,7 @@ quieres empezar de cero.
 | `Docker no responde` / `error during connect` / `Cannot connect to the Docker daemon` | Docker cerrado | Abre Docker Desktop (en Linux: `sudo systemctl start docker`), espera a que diga *Running* y repite |
 | `permission denied … docker.sock` (Linux) | Tu usuario no está en el grupo `docker` | `sudo usermod -aG docker $USER`, cierra sesión y vuelve a entrar |
 | `migraciones` termina con `password authentication failed` | Volumen de una base anterior con otras claves (por ejemplo, borraste `secretos/`) | `docker compose down -v` (borra datos) y repite el paso 2 |
-| `port is already allocated` | Otro programa usa 5173, 8000, 3001, 9090 o 3310 | Ciérralo y repite el paso 2 |
+| «Estos puertos ya los usa otro programa…» o `ports are not available` / `port is already allocated` | Otro programa usa 5173, 8000, 3001, 9090 o 3310 | Ciérralo, o cambia el puerto: [Si un puerto ya está ocupado](#si-un-puerto-ya-está-ocupado) |
 | `Conflict. The container name "/mupa-…" is already in use` | Quedaron contenedores de una versión anterior | `docker compose -p monitoreo down` y repite el paso 2 |
 | `include` no se reconoce en `compose.yaml` | Docker Compose anterior a 2.20 | Actualiza Docker Desktop o el plugin Compose |
 | `clamav` se reinicia o queda `unhealthy` | Poca memoria para Docker | Sube la memoria de Docker a 4 GB o más y repite |
