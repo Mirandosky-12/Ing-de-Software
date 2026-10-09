@@ -11,7 +11,7 @@
 
 services:
   clamav:
-    image: clamav/clamav:1.4-bookworm
+    image: clamav/clamav:stable
     container_name: mupa-clamav
     ports:
       - "3310:3310"
@@ -33,6 +33,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alertas.yml:/etc/prometheus/alertas.yml:ro
       - metricas:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
