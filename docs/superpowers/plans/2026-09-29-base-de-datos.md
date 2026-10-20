@@ -16,13 +16,15 @@
 
 El código de las tareas 1 a 7 se ejecutó completo antes de escribir este plan, aplicando las tareas en orden sobre una copia limpia del repositorio con Python 3.13. Los conteos de pruebas de cada paso son los que se obtuvieron.
 
-Las tareas 8 y 9 (PostgreSQL y Docker) **no se pudieron ejecutar**: Docker Desktop no estaba corriendo y no había PostgreSQL instalado. Sí se comprobó lo siguiente:
-- `docker compose config` valida el compose;
-- las etiquetas de imagen existen en Docker Hub;
-- todas las dependencias tienen paquete precompilado para Alpine (`musllinux`), con sus bibliotecas nativas incluidas;
-- el generador de secretos produce una clave Fernet válida.
+Las tareas 8 y 9 (PostgreSQL y Docker) no se pudieron ejecutar al escribir el plan, porque Docker Desktop no estaba corriendo. **Ya están ejecutadas.** Verificado el 2026-10-20 dentro del contenedor `mupa-bd` (`postgres:17-alpine`, base `mupa`):
+- el esquema `mupa` (dueño `mupa_owner`) tiene las ocho tablas: `cuentas`, `sesiones`, `permisos`, `documentos`, `expedientes`, `historial`, `citas` y `bitacora`;
+- existen los roles `mupa_owner` y `mupa_app` (límite de 20 conexiones);
+- están los triggers `bitacora_solo_anexar`, `historial_solo_anexar`, `bitacora_sin_truncate` e `historial_sin_truncate`;
+- `mupa-migraciones` terminó con código 0 y la base tiene datos (1 cuenta, 35 permisos, 6 registros de bitácora).
 
-Si algo falla en esas dos tareas, se corrige ahí y se anota en el commit.
+Para revisarlo: `docker exec -u postgres mupa-bd psql -d mupa -c "\dt mupa.*"`. La conexión local usa autenticación `peer`, por eso hay que entrar como el usuario `postgres` del contenedor. Las tablas están en el esquema `mupa`, no en `public`, así que un `\dt` a secas no muestra nada.
+
+Pendiente: la base de pruebas `mupa-bd-pruebas` (perfil `pruebas`) no está levantada, así que las pruebas marcadas `postgres` se saltan.
 
 ## Global Constraints
 

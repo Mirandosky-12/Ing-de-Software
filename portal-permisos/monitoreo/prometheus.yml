@@ -8,12 +8,15 @@ rule_files:
   - /etc/prometheus/alertas.yml
 
 scrape_configs:
-  # La API de la Ventanilla Única. host.docker.internal permite que Prometheus,
-  # dentro de Docker, alcance uvicorn corriendo en tu máquina.
+  # La API de la Ventanilla Única: "api" es el contenedor de docker compose.
+  # No se lista también host.docker.internal:8000: Docker Desktop publica ese
+  # mismo contenedor en el puerto 8000 del equipo, así que se leería dos veces
+  # y Grafana sumaría el doble. Si corres uvicorn en tu máquina sin el
+  # contenedor, cambia el objetivo a "host.docker.internal:8000".
   - job_name: ventanilla-api
     metrics_path: /metrics
     static_configs:
-      - targets: ["host.docker.internal:8000"]
+      - targets: ["api:8000"]
         labels:
           municipio: panama
 

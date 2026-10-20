@@ -1,0 +1,12 @@
+# Ventanilla Única Municipal — todo el sistema con un comando, desde la raíz:
+#
+#   ./levantar.sh                     # crea las claves si faltan y levanta todo
+#   docker compose up -d --build      # lo mismo, si las claves ya existen
+#   docker compose down               # apaga (los datos se conservan)
+#
+# Los servicios están definidos en portal-permisos/monitoreo/docker-compose.yml.
+# Requiere Docker Compose 2.20 o más nuevo (por "include").
+name: mupa
+
+include:
+  - portal-permisos/monitoreo/docker-compose.yml

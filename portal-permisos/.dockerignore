@@ -1,0 +1,6 @@
+# Lista blanca: a la imagen del portal sólo entra lo que el Dockerfile copia.
+*
+!index.html
+!nginx.conf
+!style.css
+!app.js

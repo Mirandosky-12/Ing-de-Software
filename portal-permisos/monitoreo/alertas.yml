@@ -13,6 +13,16 @@ groups:
             rechazando toda carga de documentos, así que ningún trámite
             puede avanzar. Revisar: docker compose logs clamav
 
+      - alert: BaseDeDatosCaida
+        expr: mupa_bd_arriba == 0
+        for: 1m
+        labels: { severidad: critica }
+        annotations:
+          summary: "La API no alcanza la base de datos en {{ $labels.municipio }}"
+          description: >
+            Ningún trámite puede crearse ni consultarse. Revisar:
+            docker compose logs bd  y  docker compose logs api
+
       - alert: AmenazaDetectada
         expr: increase(mupa_amenazas_detectadas_total[10m]) > 0
         labels: { severidad: alta }
