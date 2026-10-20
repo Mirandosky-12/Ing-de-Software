@@ -1,0 +1,6 @@
+# Lista blanca: a la imagen sólo entra lo que el Dockerfile copia.
+*
+!requirements.txt
+!*.py
+test_*.py
+conftest.py

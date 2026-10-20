@@ -1,0 +1,5 @@
+# Lo que corre dentro de contenedores Linux necesita finales de línea LF,
+# aunque se edite en Windows (con core.autocrlf=true git los pasaría a CRLF
+# y PostgreSQL no podría ejecutar el script de roles).
+*.sh        text eol=lf
+Dockerfile  text eol=lf

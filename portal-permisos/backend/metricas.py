@@ -67,6 +67,11 @@ antivirus_arriba = Gauge(
     "1 si clamd responde PONG, 0 si no.",
 )
 
+bd_arriba = Gauge(
+    "mupa_bd_arriba",
+    "1 si la API alcanza la base de datos, 0 si no.",
+)
+
 info_antivirus = Info(
     "mupa_antivirus",
     "Versión del motor y de la base de firmas de ClamAV.",

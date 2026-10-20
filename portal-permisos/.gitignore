@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+
+# Datos locales: nunca al repositorio
+backend/mupa.db
+backend/mupa.db-*
+backend/almacen/
+monitoreo/secretos/
+.env
