@@ -440,6 +440,14 @@ dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
 /* --- Bandeja del funcionario --- */
 .stats.cinco{grid-template-columns:repeat(5,1fr)}
 @media (max-width:900px){.stats.cinco{grid-template-columns:repeat(2,1fr)}}
+.demo-fill{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink-2);
+  margin-top:-4px}
+.demo-fill button{min-height:32px;padding:5px 11px;border:1px dashed var(--line);border-radius:999px;
+  background:transparent;color:var(--ink-2);font:inherit;font-size:.78rem;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px}
+.demo-fill button:hover{border-color:var(--brand);color:var(--brand);border-style:solid}
+.demo-fill svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
+
 .rolbar{display:flex;gap:6px;margin-bottom:4px}
 .rolbar button{flex:1;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
   color:var(--ink-2);font:inherit;font-size:.84rem;cursor:pointer;display:flex;align-items:center;
@@ -868,6 +876,13 @@ dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
             <span class="hint"><span id="motivo-n">0</span>/600 caracteres · mínimo 20.</span>
           </div>
 
+          <div class="demo-fill">
+            <button type="button" id="s2-demo">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Rellenar con datos de ejemplo</button>
+            <span>Para demostraciones: completa el formulario con un caso válido.</span>
+          </div>
+
           <div id="s2-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
           <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="1">Atrás</button>
@@ -890,6 +905,13 @@ dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
             <span class="d1">Arrastra tu PDF aquí o haz clic para elegirlo</span>
             <span class="d2">Solo PDF · máximo 10 MB · un archivo por solicitud</span>
           </button>
+
+          <div class="demo-fill" style="margin-top:10px">
+            <button type="button" id="s3-demo">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Adjuntar PDF de ejemplo</button>
+            <span>Genera un PDF válido y lo pasa por la misma cadena de verificación.</span>
+          </div>
 
           <div id="scan" class="scan" hidden>
             <div class="scan-h">
@@ -1280,18 +1302,27 @@ const MAX_MB = 10;
    Se decide al arrancar, preguntando por GET /salud.
    ============================================================ */
 
-// Dirección de la API. Se puede cambiar sin tocar el código, con ?api=... en
-// la URL (queda recordada) o escribiendo la clave vum-api en localStorage.
-const API_BASE = (() => {
+// Direcciones donde buscar la API, en orden. Se prueban hasta que una
+// conteste, y la que funcione queda recordada.
+//
+// Por qué más de una: en Windows «localhost» puede resolverse primero como
+// IPv6 (::1) mientras uvicorn escucha sólo en IPv4 (127.0.0.1). Las dos
+// formas nombran la misma máquina, pero el navegador no siempre reintenta.
+// Probar ambas evita ese desencuentro, que no da ningún error visible.
+const DIRECCIONES_API = (() => {
   const limpia = u => String(u).replace(/\/+$/, "");
+  const porDefecto = ["http://localhost:8000", "http://127.0.0.1:8000"];
+  const unicas = lista => lista.filter((v, i, a) => a.indexOf(v) === i);
   try {
     const q = new URLSearchParams(location.search).get("api");
-    if (q) { try { localStorage.setItem("vum-api", q); } catch {} return limpia(q); }
+    if (q) { try { localStorage.setItem("vum-api", q); } catch {} return [limpia(q)]; }
     const g = localStorage.getItem("vum-api");
-    if (g) return limpia(g);
+    if (g) return unicas([limpia(g), ...porDefecto]);   // la recordada primero
   } catch {}
-  return "http://localhost:8000";
+  return porDefecto;
 })();
+
+let API_BASE = DIRECCIONES_API[0];
 
 let MODO  = "demo";      // pasa a "api" si /salud responde
 let TOKEN = null;        // token de sesión que devuelve POST /api/sesiones
@@ -2366,6 +2397,73 @@ $('[data-step="2"]').addEventListener("submit", e => {
   paso(3);
 });
 
+/* ---------- Relleno de demostración ----------
+   Para enseñar el flujo completo sin teclear diez campos delante de la clase.
+   No se salta ninguna validación: rellena el formulario y lo somete a las
+   mismas comprobaciones que si lo hubiera escrito una persona. */
+
+const EJEMPLOS = [
+  { corregimiento:"Bella Vista", tipoActo:"Feria o exposición comercial",
+    lugar:"Ave. Balboa, frente al parque Urracá", aforo:250,
+    motivo:"Feria de emprendedores del corregimiento, con veinte toldos, tarima pequeña y actividades para las familias del área." },
+  { corregimiento:"San Francisco", tipoActo:"Concierto o presentación musical",
+    lugar:"Parque Omar, área de la concha acústica", aforo:1200,
+    motivo:"Concierto al aire libre de una agrupación local, con sonido profesional y personal de seguridad contratado para el evento." },
+  { corregimiento:"Santa Ana", tipoActo:"Actividad cultural o artística",
+    lugar:"Plaza Herrera, Casco Antiguo", aforo:400,
+    motivo:"Muestra de artesanía y danza folclórica organizada junto con la junta comunal del corregimiento." }
+];
+let nEjemplo = 0;
+
+$("#s2-demo").addEventListener("click", () => {
+  const p = state.sel.perm;
+  const e = EJEMPLOS[nEjemplo++ % EJEMPLOS.length];
+  // El aforo se ajusta al rango que admite el permiso elegido: si no, el
+  // propio formulario rechazaría el ejemplo.
+  const aforo = p?.aforo ? Math.min(Math.max(e.aforo, p.aforo[0]), p.aforo[1]) : e.aforo;
+
+  $("#f-corregimiento").value = e.corregimiento;
+  $("#f-tipoacto").value      = e.tipoActo;
+  $("#f-lugar").value         = e.lugar;
+  $("#f-fecha").value         = hoyISO(40);        // holgado sobre los 15 días exigidos
+  $("#f-hini").value          = "09:00";
+  $("#f-hfin").value          = "17:00";
+  $("#f-aforo").value         = aforo;
+  $("#f-resp").value          = `${state.user.nombre} ${state.user.apellido}`;
+  $("#f-tel").value           = "+507 6000-0000";
+  $("#f-motivo").value        = e.motivo;
+  $("#motivo-n").textContent  = e.motivo.length;
+
+  showErr($("#s2-err"), null);
+  $$('[aria-invalid="true"]', $('[data-step="2"]')).forEach(limpiarCampo);
+  toast("Formulario rellenado. Revísalo y pulsa Continuar.");
+});
+
+/* Un PDF mínimo pero válido, escrito aquí mismo: cabecera %PDF-, catálogo,
+   una página y su tabla de referencias. Pasa por la cadena de verificación
+   completa, igual que un archivo traído del disco. */
+function pdfDeEjemplo(){
+  const objetos = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>"
+  ];
+  let pdf = "%PDF-1.4\n";
+  const posiciones = objetos.map((o, i) => {
+    const donde = pdf.length;
+    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`;
+    return donde;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n` +
+         posiciones.map(d => `${String(d).padStart(10, "0")} 00000 n \n`).join("") +
+         `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return new File([Uint8Array.from(pdf, c => c.charCodeAt(0))],
+                  "solicitud-demostracion.pdf", { type:"application/pdf" });
+}
+
+$("#s3-demo").addEventListener("click", () => verificar(pdfDeEjemplo()));
+
 /* ============================================================
    10. ASISTENTE — PASO 3: DOCUMENTO PDF
        Cadena de verificación: formato → tamaño → antivirus
@@ -2838,27 +2936,29 @@ function pintarOps(){
 }
 
 async function arranque(){
-  try {
-    salud = await api("/salud", { ms: 4000 });
-    MODO = "api";
-    const bd = salud?.base_de_datos?.arriba ? "base en línea" : "base no disponible";
-    const av = salud?.antivirus?.arriba ? "ClamAV activo" : "ClamAV caído";
-    pintarModo(`${bd} · ${av}`);
-    try { await cargarCatalogoDesdeAPI(); } catch {}
+  for (const direccion of DIRECCIONES_API){
+    API_BASE = direccion;
+    try { salud = await api("/salud", { ms: 4000 }); MODO = "api"; break; }
+    catch { salud = null; }                 // esa dirección no contesta: se prueba la siguiente
+  }
 
-    // Sesión recordada: si el token sigue vivo, el portal se abre directamente.
-    const s = sesionGuardada();
-    if (s?.token){
-      TOKEN = s.token;
-      try {
-        await cargarDatosDelUsuario();          // si el token caducó, esto falla y se olvida la sesión
-        state.user = cuentaDesdeAPI(s.usuario);
-        entrar(state.user);
-      } catch { olvidarSesion(); }
-    }
-  } catch {
-    MODO = "demo";
-    pintarModo();
+  if (MODO !== "api"){ pintarModo(); return; }
+
+  try { localStorage.setItem("vum-api", API_BASE); } catch {}   // la que sirvió, recordada
+  const bd = salud?.base_de_datos?.arriba ? "base en línea" : "base no disponible";
+  const av = salud?.antivirus?.arriba ? "ClamAV activo" : "ClamAV caído";
+  pintarModo(`${bd} · ${av}`);
+  try { await cargarCatalogoDesdeAPI(); } catch {}
+
+  // Sesión recordada: si el token sigue vivo, el portal se abre directamente.
+  const s = sesionGuardada();
+  if (s?.token){
+    TOKEN = s.token;
+    try {
+      await cargarDatosDelUsuario();          // si el token caducó, esto falla y se olvida la sesión
+      state.user = cuentaDesdeAPI(s.usuario);
+      entrar(state.user);
+    } catch { olvidarSesion(); }
   }
 }
 arranque();
