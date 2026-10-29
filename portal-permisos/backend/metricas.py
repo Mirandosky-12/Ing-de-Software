@@ -33,6 +33,12 @@ solicitudes_por_estado = Gauge(
     ["estado", "municipio"],
 )
 
+resoluciones = Counter(
+    "mupa_resoluciones_total",
+    "Decisiones tomadas por los funcionarios sobre los expedientes.",
+    ["estado", "municipio"],
+)
+
 duracion_tramite = Histogram(
     "mupa_tramite_dias",
     "Días hábiles entre la recepción y la resolución de un expediente.",

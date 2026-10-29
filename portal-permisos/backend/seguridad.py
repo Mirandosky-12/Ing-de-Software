@@ -12,13 +12,15 @@ seguridad.py — Lo que protege los datos si alguien se lleva una copia de la ba
 
 from __future__ import annotations
 
+import logging
+
 import hashlib
 import hmac
 import os
 import secrets
 from functools import lru_cache
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy.types import String, TypeDecorator
 
 ITERACIONES = int(os.getenv("PBKDF2_ITER", "600000"))
@@ -84,6 +86,9 @@ def comprobar_clave() -> None:
     _fernet()
 
 
+_log = logging.getLogger("mupa.seguridad")
+
+
 class Cifrado(TypeDecorator):
     """Columna de texto que se cifra al escribir y se descifra al leer."""
 
@@ -94,4 +99,16 @@ class Cifrado(TypeDecorator):
         return None if valor is None else _fernet().encrypt(valor.encode()).decode()
 
     def process_result_value(self, valor, dialect):
-        return None if valor is None else _fernet().decrypt(valor.encode()).decode()
+        if valor is None:
+            return None
+        try:
+            return _fernet().decrypt(valor.encode()).decode()
+        except InvalidToken:
+            # La clave actual no corresponde a este dato: hubo una rotación de
+            # clave, o se restauró un respaldo sin su clave. Ese dato concreto
+            # se pierde, y así debe ser. Lo que no puede pasar es que una
+            # cédula ilegible tumbe una consulta que ni siquiera la pedía: la
+            # bandeja devolvía 500 porque al listar expedientes se carga la
+            # cuenta del solicitante, y con ella su cédula.
+            _log.warning("Cédula ilegible con la clave actual: se devuelve vacía.")
+            return None

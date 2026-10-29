@@ -13,12 +13,17 @@ Es idempotente: se puede correr las veces que haga falta.
 
 from __future__ import annotations
 
+import sys
+from datetime import datetime, timezone
+
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 import bd
 import catalogo
-from tablas import Base, Permiso
+import seguridad
+from tablas import ROLES, Base, Cuenta, Permiso
 
 SOLO_ANEXAR = ("bitacora", "historial")
 ROL_APP = "mupa_app"
@@ -79,14 +84,58 @@ def sembrar_catalogo(motor: Engine) -> None:
         s.commit()
 
 
+# Cuentas de demostración. Se siembran SÓLO en SQLite, es decir en el entorno
+# de desarrollo: hacen falta para poder entrar al portal y a la bandeja sin
+# tener que crear nada a mano. En PostgreSQL no se crea ninguna cuenta; ahí el
+# funcionario se promueve con `python migrar.py --rol revisor correo@…`.
+CUENTAS_DEMO = [
+    ("demo@mupa.gob.pa",    "demo1234",    "ciudadano", "Diego", "López",
+     22, "Universidad Tecnológica de Panamá"),
+    ("revisor@mupa.gob.pa", "revisor1234", "revisor",   "Ana",   "Pérez",
+     34, "Dirección de Permisos y Cumplimiento"),
+]
+
+
+def sembrar_cuentas_demo(motor: Engine) -> None:
+    ahora = datetime.now(timezone.utc)
+    with Session(motor) as s:
+        for correo, clave, rol, nombre, apellido, edad, organizacion in CUENTAS_DEMO:
+            if s.scalars(select(Cuenta).where(Cuenta.email == correo)).first():
+                continue                       # ya existe: no se toca su clave
+            s.add(Cuenta(email=correo, nombre=nombre, apellido=apellido, edad=edad,
+                         organizacion=organizacion, cedula=None,
+                         clave=seguridad.cifrar_clave(clave), rol=rol,
+                         consentimiento_en=ahora, creado_en=ahora))
+        s.commit()
+
+
+def asignar_rol(motor: Engine, correo: str, rol: str) -> None:
+    """Promueve una cuenta existente. Es la vía para crear funcionarios en
+    producción: nadie se registra como revisor desde el portal."""
+    if rol not in ROLES:
+        raise SystemExit(f"Rol desconocido: {rol}. Son {', '.join(ROLES)}.")
+    with Session(motor) as s:
+        cuenta = s.scalars(select(Cuenta).where(Cuenta.email == correo.lower())).first()
+        if not cuenta:
+            raise SystemExit(f"No existe ninguna cuenta con el correo {correo}.")
+        cuenta.rol = rol
+        s.commit()
+        print(f"{correo} ahora es {rol}.")
+
+
 def preparar(motor: Engine) -> None:
     crear_esquema(motor)
     sembrar_catalogo(motor)
     if motor.dialect.name == "postgresql":
         otorgar_permisos(motor)
+    else:
+        sembrar_cuentas_demo(motor)
 
 
 if __name__ == "__main__":
     m = bd.configurar()
-    preparar(m)
-    print(f"Esquema listo en {m.url.render_as_string(hide_password=True)}")
+    if len(sys.argv) == 4 and sys.argv[1] == "--rol":
+        asignar_rol(m, correo=sys.argv[3], rol=sys.argv[2])
+    else:
+        preparar(m)
+        print(f"Esquema listo en {m.url.render_as_string(hide_password=True)}")

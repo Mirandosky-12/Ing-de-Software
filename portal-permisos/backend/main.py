@@ -31,7 +31,7 @@ from contextlib import asynccontextmanager
 from datetime import date
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
@@ -68,7 +68,7 @@ app = FastAPI(title="Ventanilla Única Municipal", version="1.1.0", lifespan=cic
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGENES,
-    allow_methods=["GET", "POST", "DELETE"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -115,6 +115,11 @@ class CitaNueva(BaseModel):
     expediente: str | None = Field(default=None, max_length=200)
 
 
+class CambioDeEstado(BaseModel):
+    estado: Literal["En revisión", "Aprobado", "Subsanación", "Rechazado"]
+    comentario: str | None = Field(default=None, max_length=600)
+
+
 class MensajeContacto(BaseModel):
     nombre: str = Field(max_length=120)
     email: EmailStr
@@ -140,6 +145,14 @@ def usuario_actual(
     # hasta 30 s) y PostgreSQL corta las transacciones inactivas a los 30 s.
     s.commit()
     return cuenta
+
+
+def funcionario_actual(usuario: Cuenta = Depends(usuario_actual)) -> Cuenta:
+    """Puerta de la bandeja. Que el portal esconda los botones no basta: quien
+    decide si alguien puede resolver un expediente es la API."""
+    if usuario.rol not in ("revisor", "director"):
+        raise HTTPException(403, "Esta sección es para funcionarios de la Dirección de Permisos.")
+    return usuario
 
 
 # ------------------------------------------------------------------ métricas
@@ -375,6 +388,72 @@ def descargar_constancia(
         "Content-Disposition": f'attachment; filename="constancia-{codigo}.pdf"'})
 
 
+@app.get("/api/bandeja")
+def bandeja(
+    estado: Literal["Recibido", "En revisión", "Aprobado", "Subsanación", "Rechazado"] | None = None,
+    corregimiento: str | None = Query(default=None, max_length=60),
+    q: str | None = Query(default=None, max_length=80),
+    funcionario: Cuenta = Depends(funcionario_actual),
+    s: Session = Depends(bd.sesion),
+) -> dict:
+    """Todo lo que el funcionario necesita para pintar su bandeja en una sola
+    petición: los expedientes filtrados, el conteo por estado y la lista de
+    corregimientos que realmente tienen solicitudes."""
+    expedientes = repositorio.expedientes_todos(s, estado, corregimiento, q)
+    return {
+        "expedientes": [repositorio.expediente_a_dict(e) for e in expedientes],
+        "conteo": repositorio.conteo_por_estado(s),
+        "corregimientos": repositorio.corregimientos_con_expedientes(s),
+        "transiciones": repositorio.TRANSICIONES,
+    }
+
+
+@app.patch("/api/solicitudes/{codigo}")
+def resolver_solicitud(
+    codigo: str,
+    cambio: CambioDeEstado,
+    funcionario: Cuenta = Depends(funcionario_actual),
+    s: Session = Depends(bd.sesion),
+) -> dict:
+    """Aprobar, rechazar, poner en revisión o pedir subsanación."""
+    expediente = repositorio.expediente_por_codigo(s, codigo)
+    if not expediente:
+        raise HTTPException(404, "Ese expediente no existe.")
+
+    if cambio.estado in repositorio.EXIGEN_COMENTARIO and not (cambio.comentario or "").strip():
+        raise HTTPException(
+            400, f"Para «{cambio.estado}» hay que explicar el motivo al solicitante.")
+
+    anterior = expediente.estado
+    try:
+        repositorio.cambiar_estado(s, expediente, funcionario, cambio.estado, cambio.comentario)
+    except repositorio.TransicionInvalida as e:
+        raise HTTPException(409, str(e))
+
+    repositorio.registrar(s, "expediente.resuelto", funcionario.email,
+                          codigo=codigo, de=anterior, a=cambio.estado)
+    s.commit()
+
+    metricas.resoluciones.labels(cambio.estado, MUNICIPIO).inc()
+    refrescar_estados(s)
+    return repositorio.expediente_a_dict(expediente)
+
+
+@app.get("/api/solicitudes/{codigo}/historial")
+def historial_solicitud(
+    codigo: str,
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> list[dict]:
+    """El avance del expediente. Lo ve su solicitante y cualquier funcionario;
+    para un tercero el expediente simplemente no existe."""
+    expediente = repositorio.expediente_por_codigo(s, codigo)
+    if not expediente or (usuario.rol == "ciudadano"
+                          and expediente.solicitante_id != usuario.id):
+        raise HTTPException(404, "No encontramos ese expediente.")
+    return repositorio.historial_a_dicts(s, expediente)
+
+
 # ------------------------------------------------------------------ citas
 
 @app.post("/api/citas", status_code=201)
@@ -393,6 +472,35 @@ def reservar_cita(
     repositorio.registrar(s, "cita.reservada", email, turno=cita.turno, sede=c.sede)
     s.commit()
     return repositorio.cita_a_dict(cita)
+
+
+@app.get("/api/citas")
+def listar_citas(
+    proximas: bool = True,
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> list[dict]:
+    """Las citas del solicitante. Por defecto sólo las que todavía no han
+    pasado; con ?proximas=false vienen también las anteriores."""
+    desde = date.today() if proximas else None
+    return [repositorio.cita_a_dict(c) for c in repositorio.citas_de(s, usuario, desde)]
+
+
+@app.get("/api/citas/ocupadas")
+def horarios_ocupados(
+    sede: str = Query(max_length=80),
+    fecha: date = Query(),
+    usuario: Cuenta = Depends(usuario_actual),
+    s: Session = Depends(bd.sesion),
+) -> dict:
+    """Qué horarios de esa sede y ese día ya están tomados, para que el portal
+    pinte la rejilla con la ocupación real. Devuelve sólo las horas: quién
+    reservó cada turno es dato de la otra persona y no sale de aquí."""
+    return {
+        "sede": sede,
+        "fecha": fecha.isoformat(),
+        "ocupadas": repositorio.horas_ocupadas(s, sede, fecha),
+    }
 
 
 # ------------------------------------------------------------------ contacto
