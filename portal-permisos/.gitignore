@@ -9,3 +9,4 @@ backend/mupa.db-*
 backend/almacen/
 monitoreo/secretos/
 .env
+backend/clave_cifrado.txt

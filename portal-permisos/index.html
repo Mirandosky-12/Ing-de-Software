@@ -7,14 +7,510 @@
 <meta name="description" content="Portal oficial para solicitar permisos ante la Dirección de Permisos y Cumplimiento del Municipio de Panamá.">
 <title>Ventanilla Única Municipal</title>
 <script>try{var t=localStorage.getItem("vum-tema");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css">
 
+<style>
+/* Layout: barra lateral fija con la navegación en escritorio, que colapsa a una
+   cinta de pestañas superior en móvil; las pantallas de acceso van centradas a una columna. */
+:root{
+  --bg:#f3f6f9;
+  --surface:#ffffff;
+  --surface-2:#e9eef4;
+  --ink:#15212c;
+  --ink-2:#556676;
+  --line:#d6dee7;
+  --brand:#0b4f8a;
+  --brand-2:#0a3f6f;
+  --brand-soft:#e2edf8;
+  --on-brand:#ffffff;
+  --accent:#b8701c;
+  --ok:#186b45;
+  --ok-soft:#dff0e7;
+  --warn:#8f5a00;
+  --warn-soft:#fbeed4;
+  --crit:#a52218;
+  --crit-soft:#fbe3e1;
+  --shadow:0 1px 2px rgba(21,33,44,.06), 0 8px 24px -16px rgba(21,33,44,.28);
+  --accent-soft:#f8ecdb;
+  --franja:#0a3f6f;
+  --ring:0 0 0 3px rgba(11,79,138,.28);
+  --tap:44px;               /* alto mínimo de lo que se toca con el dedo */
+
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c141b;
+    --surface:#131f28;
+    --surface-2:#1a2833;
+    --ink:#e7eef4;
+    --ink-2:#95a7b6;
+    --line:#26363f;
+    --brand:#4fa1e0;
+    --brand-2:#79bcf0;
+    --brand-soft:#14293b;
+    --on-brand:#08131c;
+    --accent:#dd9a45;
+    --ok:#52c48d;
+    --ok-soft:#12302a;
+    --warn:#dfb055;
+    --warn-soft:#2e2712;
+    --crit:#f0796c;
+    --crit-soft:#331a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  --accent-soft:#33260f; --franja:#0d2d4a; --ring:0 0 0 3px rgba(79,161,224,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c141b;
+  --surface:#131f28;
+  --surface-2:#1a2833;
+  --ink:#e7eef4;
+  --ink-2:#95a7b6;
+  --line:#26363f;
+  --brand:#4fa1e0;
+  --brand-2:#79bcf0;
+  --brand-soft:#14293b;
+  --on-brand:#08131c;
+  --accent:#dd9a45;
+  --ok:#52c48d;
+  --ok-soft:#12302a;
+  --warn:#dfb055;
+  --warn-soft:#2e2712;
+  --crit:#f0796c;
+  --crit-soft:#331a1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  --accent-soft:#33260f; --franja:#0d2d4a; --ring:0 0 0 3px rgba(79,161,224,.35);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+/* `hidden` debe ganar siempre. Antes .shell, .notice y los estilos en línea de
+   los pasos ponían su propio display y dejaban visible lo que debía ocultarse:
+   el panel aparecía bajo el login y los pasos del asistente se apilaban. */
+[hidden]{display:none !important}
+html{height:100%}
+body{
+  margin:0;min-height:100%;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:1.65rem;font-weight:700;letter-spacing:-.015em}
+h2{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
+h3{font-size:1rem;font-weight:600}
+p{margin:0}
+a{color:var(--brand)}
+button{font:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:4px}
+.ic{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-family:var(--display);font-size:.7rem;font-weight:600;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--brand);
+}
+.muted{color:var(--ink-2)}
+.small{font-size:.83rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- controles ---------- */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field > label{font-size:.82rem;font-weight:600;color:var(--ink)}
+.field .hint{font-size:.76rem;color:var(--ink-2)}
+.req{color:var(--crit);font-weight:700}
+input[type=text],input[type=email],input[type=password],input[type=number],
+input[type=date],input[type=time],input[type=tel],select,textarea{
+  width:100%;min-height:var(--tap);padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:1rem;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
+input[type=checkbox]{min-width:20px;height:20px;accent-color:var(--brand);flex:none}
+textarea{resize:vertical;min-height:88px}
+[aria-invalid="true"]{border-color:var(--crit) !important;box-shadow:0 0 0 3px var(--crit-soft) !important}
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:50px}
+.ver-clave{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;
+  border:0;border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer;display:grid;place-items:center}
+.ver-clave:hover{color:var(--ink);background:var(--surface-2)}
+.ver-clave svg{width:20px;height:20px}
+.ver-clave[aria-pressed="true"]{color:var(--brand)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:var(--tap);padding:10px 20px;border-radius:8px;border:1px solid transparent;
+  background:var(--brand);color:var(--on-brand);font-weight:600;font-size:.9rem;cursor:pointer;
+  transition:filter .15s ease, background .15s ease;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;color:var(--brand);border-color:var(--line)}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.plain{background:transparent;color:var(--ink-2);border-color:transparent;padding:6px 10px;min-height:36px}
+.btn.plain:hover{color:var(--ink);background:var(--surface-2)}
+.btn.wide{width:100%}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row > *{flex:1 1 220px;min-width:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:20px;box-shadow:var(--shadow);
+}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+  font-size:.74rem;font-weight:600;letter-spacing:.02em;white-space:nowrap;
+}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.info{background:var(--brand-soft);color:var(--brand)}
+
+/* ---------- pantallas de acceso ---------- */
+.auth{min-height:100%;display:grid;grid-template-columns:1fr;align-items:start}
+.auth-wrap{width:100%;max-width:1040px;margin:0 auto;padding-block:32px 48px;
+  display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+@media (max-width:860px){.auth-wrap{grid-template-columns:1fr;gap:28px;padding-block:24px 36px}}
+.seal{
+  width:52px;height:52px;border-radius:50%;flex:none;
+  border:2px solid var(--brand);display:grid;place-items:center;
+  font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--brand);
+  letter-spacing:.02em;background:var(--brand-soft);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+.brandline{display:flex;gap:14px;align-items:center;margin-bottom:22px}
+.brandline .t1{font-family:var(--display);font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
+.brandline .t2{font-size:.78rem;color:var(--ink-2)}
+.hero-h{font-size:clamp(1.9rem,4.4vw,2.7rem);font-weight:700;letter-spacing:-.025em;margin-bottom:12px}
+.hero-h em{font-style:normal;color:var(--brand)}
+.hero-p{color:var(--ink-2);max-width:46ch;margin-bottom:24px}
+.facts{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.facts div{background:var(--bg);padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.facts dt{font-size:.82rem;color:var(--ink-2)}
+.facts dd{margin:0;font-family:var(--mono);font-size:.86rem;font-weight:500;text-align:right}
+
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:9px;margin-bottom:20px}
+.tabs button{
+  flex:1;padding:8px;border:0;border-radius:6px;background:transparent;
+  color:var(--ink-2);font-weight:600;font-size:.87rem;cursor:pointer;
+}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+.demo-note{
+  margin-top:14px;padding:10px 12px;border-radius:8px;border:1px dashed var(--line);
+  background:var(--surface-2);font-size:.79rem;color:var(--ink-2);
+}
+.demo-note b{color:var(--ink);font-family:var(--mono);font-weight:500}
+
+/* ---------- shell de la aplicación ---------- */
+.shell{display:grid;grid-template-columns:238px 1fr;min-height:100%}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}}
+.side{
+  border-right:1px solid var(--line);background:var(--surface);
+  padding:22px 16px;display:flex;flex-direction:column;gap:22px;
+  position:sticky;top:env(safe-area-inset-top,0px);height:100%;
+}
+@media (max-width:900px){
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);
+    padding:10px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+}
+.side .who{display:flex;gap:10px;align-items:center;min-width:0}
+.avatar{
+  width:36px;height:36px;border-radius:9px;flex:none;display:grid;place-items:center;
+  background:var(--brand);color:var(--on-brand);font-family:var(--display);font-weight:700;font-size:.85rem;
+}
+.who .n{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who .o{font-size:.74rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav.menu{display:flex;flex-direction:column;gap:2px}
+nav.menu button{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:9px 11px;border:0;border-radius:8px;background:transparent;
+  color:var(--ink-2);font-weight:500;font-size:.89rem;cursor:pointer;white-space:nowrap;
+}
+nav.menu button:hover{background:var(--surface-2);color:var(--ink)}
+nav.menu button[aria-current="page"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
+nav.menu svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:900px){
+  /* El mismo menú, fijo abajo: las cinco secciones siempre al alcance del pulgar.
+     Va después de la regla base de los botones para poder cambiar su tamaño y ajuste. */
+  nav.menu{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--surface);
+    border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));
+    box-shadow:0 -6px 20px -14px rgba(21,33,44,.35)}
+  nav.menu button{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:6px 2px;
+    text-align:center;white-space:normal;font-size:.68rem;line-height:1.15;overflow-wrap:anywhere}
+  nav.menu svg{width:20px;height:20px}
+  html{scroll-padding-bottom:96px}
+}
+.side .foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+@media (max-width:900px){
+  .side .foot{margin:0;flex-direction:row;gap:4px}
+  .side .foot .who,.side .foot .opsbar{display:none}
+  .side .foot .btn{width:44px;min-height:44px;padding:0}
+  .side .foot .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+.side .foot .btn svg{width:18px;height:18px;flex:none}
+.opsbar{font-size:.7rem;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;
+  padding-top:12px;border-top:1px solid var(--line)}
+.opsbar span{display:flex;align-items:center;gap:6px}
+.dot-ok{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+.dot-warn{width:6px;height:6px;border-radius:50%;background:var(--warn);flex:none}
+.dot-crit{width:6px;height:6px;border-radius:50%;background:var(--crit);flex:none}
+
+.main{padding:28px 24px 64px;min-width:0}
+@media (max-width:640px){.main{padding:20px 16px 56px}}
+@media (max-width:900px){
+  .main{padding-bottom:104px}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+}
+.saltar{position:absolute;left:16px;top:-60px;z-index:70;background:var(--brand);color:var(--on-brand);
+  padding:10px 16px;border-radius:8px;font-weight:600;text-decoration:none}
+.saltar:focus{top:12px}
+.main:focus{outline:none}
+[data-page] h1:focus{outline:none}
+.main-in{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.page-head p{color:var(--ink-2);max-width:58ch;margin-top:4px;font-size:.92rem}
+
+/* ---------- tarjetas de indicadores ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 15px;
+  display:flex;flex-direction:column;gap:2px;font:inherit;color:inherit;text-align:left;cursor:pointer;
+  transition:border-color .15s ease, box-shadow .15s ease}
+.stat:hover{border-color:var(--brand);box-shadow:var(--shadow)}
+.stat .v{font-family:var(--display);font-size:1.75rem;font-weight:700;line-height:1;
+  font-variant-numeric:tabular-nums}
+.stat .k{font-size:.76rem;color:var(--ink-2)}
+.stat.s-ok .v{color:var(--ok)} .stat.s-warn .v{color:var(--warn)} .stat.s-crit .v{color:var(--crit)}
+
+/* ---------- lista de expedientes ---------- */
+.exp-list{display:flex;flex-direction:column;gap:10px}
+.exp{
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);
+  border-radius:10px;padding:14px 16px;display:grid;
+  grid-template-columns:1fr auto;gap:8px 16px;align-items:start;
+}
+.exp-der{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.exp .ver{min-height:36px;padding:6px 12px;font-size:.84rem}
+
+.atencion{border-left:4px solid var(--crit);display:flex;flex-direction:column;gap:12px}
+.atencion .at-h{display:flex;gap:10px;align-items:center;color:var(--crit)}
+.atencion .at-h svg{width:22px;height:22px;flex:none}
+.atencion .at-h h2{color:var(--ink)}
+.at-r{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;
+  padding-top:12px;border-top:1px solid var(--line)}
+.at-r .code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2)}
+.at-r .name{font-weight:600}
+
+dialog.detalle{border:0;border-radius:14px;padding:0;width:min(580px,calc(100vw - 32px));
+  max-height:calc(100dvh - 32px);background:var(--surface);color:var(--ink);
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.55)}
+dialog.detalle::backdrop{background:rgba(12,20,27,.55)}
+.det-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:18px 20px;border-bottom:1px solid var(--line)}
+.det-h .code{font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
+.det-b{padding:18px 20px 22px;display:flex;flex-direction:column;gap:18px}
+.linea{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.linea li{font-size:.8rem;color:var(--ink-2);padding-top:10px;border-top:4px solid var(--surface-2)}
+.linea li[data-s="done"]{border-top-color:var(--ok);color:var(--ink)}
+.linea li[data-s="on"]{border-top-color:var(--brand);color:var(--ink);font-weight:600}
+.linea li[data-s="on"].crit{border-top-color:var(--crit)}
+.sigue{background:var(--surface-2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.sigue p{font-size:.9rem;color:var(--ink-2)}
+.exp.st-ok{border-left-color:var(--ok)} .exp.st-warn{border-left-color:var(--warn)}
+.exp.st-crit{border-left-color:var(--crit)} .exp.st-info{border-left-color:var(--brand)}
+.exp .code{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);letter-spacing:.01em}
+.exp .name{font-weight:600;font-size:.94rem;margin-top:1px}
+.exp .meta{font-size:.79rem;color:var(--ink-2);margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
+.exp .meta i{font-style:normal}
+.exp .meta i::after{content:"·";margin-left:6px;color:var(--line)}
+.exp .meta i:last-child::after{content:""}
+
+/* ---------- asistente de solicitud ---------- */
+.stepper{display:flex;gap:0;margin-bottom:4px;overflow-x:auto;scrollbar-width:none}
+.stepper::-webkit-scrollbar{display:none}
+.stepper .s{display:flex;align-items:center;gap:8px;padding-right:14px;white-space:nowrap}
+.stepper .s + .s{padding-left:14px;border-left:1px solid var(--line)}
+.stepper .num{
+  width:23px;height:23px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-family:var(--mono);font-size:.74rem;font-weight:500;
+  border:1px solid var(--line);color:var(--ink-2);background:var(--surface);
+}
+.stepper .s[data-state="on"] .num{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.stepper .s[data-state="done"] .num{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.stepper .lbl{font-size:.8rem;color:var(--ink-2);font-weight:500}
+@media (max-width:640px){.stepper .s:not([data-state="on"]) .lbl{display:none}}
+.progreso{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}
+.progreso span{display:block;height:100%;width:25%;background:var(--brand);border-radius:inherit;transition:width .3s ease}
+.paso-de{font-size:.85rem;color:var(--ink-2);margin-top:6px;font-weight:500}
+.buscador input{padding-left:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23556676' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center}
+.stepper .s[data-state="on"] .lbl{color:var(--ink);font-weight:600}
+
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.cat{
+  text-align:left;padding:13px 14px;border:1px solid var(--line);border-radius:10px;
+  background:var(--surface);cursor:pointer;color:var(--ink);
+  display:flex;flex-direction:column;gap:3px;
+}
+.cat:hover{border-color:var(--brand);background:var(--brand-soft)}
+.cat[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.cat .cn{font-weight:600;font-size:.9rem}
+.cat .cc{font-size:.76rem;color:var(--ink-2)}
+
+.opt-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;
+  padding-right:4px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface)}
+.opt{
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+  padding:10px 11px;border-radius:8px;border:1px solid transparent;cursor:pointer;background:transparent;
+  text-align:left;color:var(--ink);
+}
+.opt:hover{background:var(--surface-2)}
+.opt[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand)}
+.opt .radio{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex:none}
+.opt[aria-pressed="true"] .radio{border-color:var(--brand);border-width:4.5px}
+.opt .on{font-size:.88rem;font-weight:500;line-height:1.35}
+.opt .od{font-size:.74rem;color:var(--ink-2);margin-top:1px}
+.opt .days{font-family:var(--mono);font-size:.73rem;color:var(--ink-2);white-space:nowrap}
+
+.req-box{background:var(--surface-2);border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
+.req-box ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.req-box li{font-size:.85rem;color:var(--ink-2)}
+.req-box li b{color:var(--ink);font-weight:600}
+
+/* ---------- carga de documentos ---------- */
+.drop{
+  border:1.5px dashed var(--line);border-radius:11px;padding:26px 18px;text-align:center;
+  background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+.drop:hover,.drop.over{border-color:var(--brand);background:var(--brand-soft)}
+.drop svg{width:26px;height:26px;stroke:var(--brand);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.drop .d1{font-weight:600;font-size:.92rem}
+.drop .d2{font-size:.78rem;color:var(--ink-2)}
+
+.scan{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.scan-h{display:flex;justify-content:space-between;gap:12px;align-items:center;
+  padding:11px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.scan-h .fn{font-weight:600;font-size:.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.checks{display:flex;flex-direction:column}
+.chk{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;
+  padding:9px 14px;font-size:.84rem;border-top:1px solid var(--line)}
+.chk:first-child{border-top:0}
+.chk .ic{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;
+  font-size:.65rem;font-weight:700;background:var(--surface-2);color:var(--ink-2);font-family:var(--mono)}
+.chk[data-s="run"] .ic{background:var(--brand-soft);color:var(--brand)}
+.chk[data-s="ok"] .ic{background:var(--ok-soft);color:var(--ok)}
+.chk[data-s="bad"] .ic{background:var(--crit-soft);color:var(--crit)}
+.chk .cv{font-family:var(--mono);font-size:.72rem;color:var(--ink-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(42vw,300px)}
+.chk[data-s="bad"] .cv{color:var(--crit)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chk[data-s="run"] .ic{animation:spin 1s linear infinite}
+@media (prefers-reduced-motion: reduce){.chk[data-s="run"] .ic{animation:none}}
+
+/* ---------- resumen ---------- */
+.summary{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.summary .r{background:var(--surface);padding:11px 14px;display:grid;grid-template-columns:170px 1fr;gap:12px}
+@media (max-width:560px){.summary .r{grid-template-columns:1fr;gap:2px}}
+.summary dt{font-size:.8rem;color:var(--ink-2)}
+.summary dd{margin:0;font-size:.88rem;font-weight:500;overflow-wrap:anywhere}
+
+/* ---------- citas ---------- */
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.slot{padding:9px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);
+  font-family:var(--mono);font-size:.82rem;cursor:pointer;color:var(--ink)}
+.slot:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft)}
+.slot[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:500}
+.slot:disabled{opacity:.38;cursor:not-allowed;text-decoration:line-through}
+/* --- Bandeja del funcionario --- */
+.stats.cinco{grid-template-columns:repeat(5,1fr)}
+@media (max-width:900px){.stats.cinco{grid-template-columns:repeat(2,1fr)}}
+.demo-fill{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink-2);
+  margin-top:-4px}
+.demo-fill button{min-height:32px;padding:5px 11px;border:1px dashed var(--line);border-radius:999px;
+  background:transparent;color:var(--ink-2);font:inherit;font-size:.78rem;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px}
+.demo-fill button:hover{border-color:var(--brand);color:var(--brand);border-style:solid}
+.demo-fill svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
+
+.rolbar{display:flex;gap:6px;margin-bottom:4px}
+.rolbar button{flex:1;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  color:var(--ink-2);font:inherit;font-size:.84rem;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:7px}
+.rolbar button:hover{border-color:var(--brand)}
+.rolbar button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:600}
+.rolbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.exp .quien{font-size:.74rem;color:var(--ink-2);margin-top:3px}
+.hist{list-style:none;padding:0;margin:14px 0 0;border-left:2px solid var(--line)}
+.hist li{position:relative;padding:0 0 14px 16px;font-size:.82rem}
+.hist li::before{content:"";position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;
+  background:var(--line)}
+.hist li:last-child::before{background:var(--brand)}
+.hist .he{font-weight:600;color:var(--ink)}
+.hist .hm{color:var(--ink-2);font-size:.76rem}
+.hist .hc{margin-top:4px;padding:7px 9px;background:var(--surface-2,rgba(127,127,127,.08));
+  border-radius:8px;color:var(--ink)}
+.resolver{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.resolver textarea{width:100%;min-height:72px;margin-top:8px}
+.resolver .actions{margin-top:10px;flex-wrap:wrap}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.crit{background:var(--crit);border-color:var(--crit);color:#fff}
+.btn.warn{background:var(--warn);border-color:var(--warn);color:#fff}
+
+.atajos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);
+  color:var(--ink);font:inherit;font-size:.84rem;cursor:pointer}
+.chip:hover{border-color:var(--brand)}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:600}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.8rem;color:var(--ink-2);margin-top:10px}
+.leyenda span{display:inline-flex;align-items:center;gap:6px}
+.leyenda i{width:14px;height:14px;border-radius:4px;border:1px solid var(--line);background:var(--surface)}
+.leyenda i.ocup{opacity:.38;background:repeating-linear-gradient(135deg,var(--line) 0 2px,transparent 2px 5px)}
+.leyenda i.sel{background:var(--brand);border-color:var(--brand)}
+
+/* ---------- avisos ---------- */
+.notice{display:flex;gap:10px;padding:11px 13px;border-radius:9px;font-size:.9rem;align-items:flex-start}
+.notice .ni{width:18px;height:18px;flex:none;margin-top:2px}
+
+/* ---------- franja oficial ---------- */
+.franja{background:var(--franja);color:#fff;font-size:.8rem;border-bottom:3px solid var(--accent)}
+.franja-in{max-width:1040px;margin:0 auto;padding:6px 16px;display:flex;gap:8px;align-items:center}
+.franja svg{width:16px;height:16px;flex:none}
+.notice.ok{background:var(--ok-soft);color:var(--ok)}
+.notice.crit{background:var(--crit-soft);color:var(--crit)}
+.notice.info{background:var(--brand-soft);color:var(--brand)}
+.notice b{font-weight:600}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;
+  font-size:.86rem;font-weight:500;z-index:60;box-shadow:0 8px 28px -10px rgba(0,0,0,.5);
+}
+.divider{height:1px;background:var(--line);border:0;margin:0}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv .k{font-size:.74rem;color:var(--ink-2)}
+.kv .v{font-size:.9rem;font-weight:500}
+.copyable{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.copyable .v{font-family:var(--mono);font-size:.85rem;user-select:all}
+</style>
 </head>
 <body>
-<svg width="0" height="0" aria-hidden="true" focusable="false" class="iconos-ocultos">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></symbol>
   <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 10"/></symbol>
   <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></symbol>
@@ -29,7 +525,7 @@
 
 <!-- =================== ACCESO =================== -->
 <div id="view-auth" class="auth">
-  <div class="auth-wrap auth-margen-lateral">
+  <div class="auth-wrap" style="padding-inline:16px">
 
     <section>
       <div class="brandline">
@@ -49,15 +545,24 @@
       </dl>
     </section>
 
-    <section class="card tarjeta-espaciada">
+    <section class="card" style="padding:24px">
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-login" aria-selected="true" aria-controls="pane-login">Iniciar sesión</button>
         <button role="tab" id="tab-signup" aria-selected="false" aria-controls="pane-signup">Crear cuenta</button>
       </div>
 
       <!-- Inicio de sesión -->
-      <form id="pane-login" role="tabpanel" aria-labelledby="tab-login" novalidate class="formulario-acceso">
-        <h2>Entrar al portal</h2>
+      <form id="pane-login" role="tabpanel" aria-labelledby="tab-login" style="display:flex;flex-direction:column;gap:14px" novalidate>
+        <h2 id="li-titulo">Entrar al portal</h2>
+        <div class="rolbar" id="li-rol" role="group" aria-label="Tipo de acceso">
+          <button type="button" data-rol="ciudadano" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            Soy solicitante</button>
+          <button type="button" data-rol="funcionario" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 4.4-3.1 8.4-8 9.5C7.1 20.4 4 16.4 4 12V7z"/><path d="M9 12l2 2 4-4"/></svg>
+            Soy funcionario</button>
+        </div>
+        <p class="small muted" id="li-ayuda" style="margin:-4px 0 0">Para ciudadanos y empresas que solicitan un permiso.</p>
         <div class="field">
           <label for="li-email">Correo electrónico <span class="req">*</span></label>
           <input id="li-email" type="email" autocomplete="username" placeholder="nombre@correo.com" required>
@@ -71,7 +576,7 @@
         </div>
         <div id="li-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Iniciar sesión</button>
-        <p class="small muted texto-centrado">
+        <p class="small muted" style="text-align:center">
           ¿No tienes cuenta? <a href="#crear" id="go-signup">Créala aquí</a>
         </p>
         <div class="demo-note">
@@ -80,7 +585,7 @@
       </form>
 
       <!-- Creación de cuenta -->
-      <form id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" hidden novalidate class="formulario-registro">
+      <form id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" hidden style="flex-direction:column;gap:13px" novalidate>
         <h2>Crear cuenta</h2>
         <p class="small muted">Todos los campos marcados con <span class="req">*</span> son obligatorios.</p>
         <div class="row">
@@ -126,13 +631,14 @@
             <input id="su-pass2" type="password" autocomplete="new-password" placeholder="Repite la contraseña" required>
           </div>
         </div>
-        <label class="consentimiento-registro">
-          <input id="su-ok" type="checkbox" required class="casilla-consentimiento">
-          <span>Autorizo el tratamiento de mis datos conforme a la <b class="texto-principal">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
+        <label style="display:flex;gap:9px;align-items:flex-start;font-size:.82rem;color:var(--ink-2)">
+          <input id="su-ok" type="checkbox" required style="margin-top:3px;width:auto">
+          <span>Autorizo el tratamiento de mis datos conforme a la <b style="color:var(--ink)">Ley 81 de 2019</b> de protección de datos personales de la República de Panamá.</span>
         </label>
+        <div class="demo-note" id="su-modo"></div>
         <div id="su-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
         <button class="btn wide" type="submit">Crear cuenta y entrar</button>
-        <p class="small muted texto-centrado">
+        <p class="small muted" style="text-align:center">
           ¿Ya tienes cuenta? <a href="#entrar" id="go-login">Inicia sesión</a>
         </p>
       </form>
@@ -144,43 +650,42 @@
 <div id="view-app" class="shell" hidden>
   <a class="saltar" href="#contenido">Saltar al contenido</a>
   <aside class="side">
-    <div class="brandline marca-lateral">
-      <div class="seal sello-compacto" aria-hidden="true">MP</div>
-      <div class="ancho-flexible">
-        <div class="t1 titulo-marca-compacto">Ventanilla Única</div>
-        <div class="t2 subtitulo-marca-compacto">Municipio de Panamá</div>
+    <div class="brandline" style="margin:0;gap:10px">
+      <div class="seal" style="width:38px;height:38px;font-size:.75rem" aria-hidden="true">MP</div>
+      <div style="min-width:0">
+        <div class="t1" style="font-size:.9rem">Ventanilla Única</div>
+        <div class="t2" style="font-size:.72rem">Municipio de Panamá</div>
       </div>
     </div>
 
     <nav class="menu" aria-label="Secciones del portal">
-      <button data-nav="inicio" aria-current="page">
+      <button data-nav="bandeja" data-solo="funcionario" hidden>
+        <svg viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h5l1 2h6l1-2h5"/></svg>Bandeja de revisión</button>
+      <button data-nav="inicio" data-solo="ciudadano" aria-current="page">
         <svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
-      <button data-nav="solicitar">
+      <button data-nav="solicitar" data-solo="ciudadano">
         <svg viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></svg>Solicitar permiso</button>
-      <button data-nav="expedientes">
+      <button data-nav="expedientes" data-solo="ciudadano">
         <svg viewBox="0 0 24 24"><path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Mis solicitudes</button>
-      <button data-nav="citas">
+      <button data-nav="citas" data-solo="ciudadano">
         <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Citas</button>
-      <button data-nav="contacto">
+      <button data-nav="contacto" data-solo="ciudadano">
         <svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg>Contacto</button>
     </nav>
 
     <div class="foot">
       <div class="who">
         <div class="avatar" id="u-ini">DL</div>
-        <div class="ancho-flexible">
+        <div style="min-width:0">
           <div class="n" id="u-name">—</div>
           <div class="o" id="u-org">—</div>
         </div>
       </div>
-      <button class="btn plain acciones-inicio" id="btn-theme" aria-pressed="false">
+      <button class="btn plain" id="btn-theme" aria-pressed="false" style="justify-content:flex-start">
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span class="lbl">Tema oscuro</span></button>
-      <button class="btn plain acciones-inicio" id="btn-logout">
+      <button class="btn plain" id="btn-logout" style="justify-content:flex-start">
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg><span class="lbl">Cerrar sesión</span></button>
-      <div class="opsbar">
-        <span><i class="dot-ok"></i>Antivirus documental activo</span>
-        <span><i class="dot-ok"></i>Monitoreo de servicio en línea</span>
-      </div>
+      <div class="opsbar" id="opsbar"></div>
     </div>
   </aside>
 
@@ -198,22 +703,67 @@
           <button class="btn" data-nav="solicitar">Nueva solicitud</button>
         </div>
 
-        <div class="stats margen-superior-20">
+        <div class="stats" style="margin-top:20px">
           <button type="button" class="stat" data-filtro=""><span class="v" id="k-total">0</span><span class="k">Expedientes</span></button>
           <button type="button" class="stat s-warn" data-filtro="En revisión"><span class="v" id="k-rev">0</span><span class="k">En revisión</span></button>
           <button type="button" class="stat s-ok" data-filtro="Aprobado"><span class="v" id="k-apr">0</span><span class="k">Aprobados</span></button>
           <button type="button" class="stat s-crit" data-filtro="Subsanación"><span class="v" id="k-sub">0</span><span class="k">Subsanación</span></button>
         </div>
 
-        <div class="margen-superior-22">
-          <section class="card atencion margen-inferior-22" id="atencion" aria-labelledby="at-titulo" hidden>
+        <div style="margin-top:22px">
+          <section class="card atencion" id="atencion" aria-labelledby="at-titulo" hidden style="margin-bottom:22px">
             <div class="at-h"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alerta"/></svg>
               <h2 id="at-titulo">Requiere tu atención</h2></div>
             <div id="at-lista"></div>
           </section>
-          <h2 class="margen-inferior-10">Movimiento reciente</h2>
+          <h2 style="margin-bottom:10px">Movimiento reciente</h2>
           <div class="exp-list" id="recent"></div>
         </div>
+      </section>
+
+      <!-- ---------- BANDEJA DEL FUNCIONARIO ---------- -->
+      <section data-page="bandeja" hidden>
+        <div class="page-head">
+          <div>
+            <span class="eyebrow">Dirección de Permisos y Cumplimiento</span>
+            <h1 id="b-saludo">Bandeja de revisión</h1>
+            <p>Solicitudes de todo el municipio. Cada decisión queda firmada con tu nombre en el historial del expediente.</p>
+          </div>
+          <button class="btn ghost" type="button" id="b-recargar">Actualizar</button>
+        </div>
+
+        <div class="stats cinco" style="margin-top:20px">
+          <button type="button" class="stat" data-bfiltro=""><span class="v" id="b-k-tot">0</span><span class="k">Total</span></button>
+          <button type="button" class="stat" data-bfiltro="Recibido"><span class="v" id="b-k-rec">0</span><span class="k">Recibidos</span></button>
+          <button type="button" class="stat s-warn" data-bfiltro="En revisión"><span class="v" id="b-k-rev">0</span><span class="k">En revisión</span></button>
+          <button type="button" class="stat s-crit" data-bfiltro="Subsanación"><span class="v" id="b-k-sub">0</span><span class="k">Subsanación</span></button>
+          <button type="button" class="stat s-ok" data-bfiltro="Aprobado"><span class="v" id="b-k-apr">0</span><span class="k">Aprobados</span></button>
+        </div>
+
+        <div class="row" style="margin-top:18px">
+          <div class="field" style="flex:2 1 240px">
+            <label for="b-q">Buscar por expediente, lugar o responsable</label>
+            <input id="b-q" type="search" placeholder="Ej. EXP-2026 o «Bella Vista»">
+          </div>
+          <div class="field">
+            <label for="b-est">Estado</label>
+            <select id="b-est">
+              <option value="">Todos</option>
+              <option>Recibido</option>
+              <option>En revisión</option>
+              <option>Subsanación</option>
+              <option>Aprobado</option>
+              <option>Rechazado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="b-corr">Corregimiento</label>
+            <select id="b-corr"><option value="">Todos</option></select>
+          </div>
+        </div>
+
+        <div class="exp-list" id="b-lista" style="margin-top:16px" aria-live="polite"></div>
+        <p class="small muted" id="b-vacio" hidden style="text-align:center;padding:24px">No hay solicitudes que coincidan con el filtro.</p>
       </section>
 
       <!-- ---------- SOLICITAR PERMISO ---------- -->
@@ -226,7 +776,7 @@
           </div>
         </div>
 
-        <div class="stepper margen-superior-18" id="stepper">
+        <div class="stepper" id="stepper" style="margin-top:18px">
           <div class="s" data-state="on"><span class="num">1</span><span class="lbl">Tipo de permiso</span></div>
           <div class="s"><span class="num">2</span><span class="lbl">Datos del acto</span></div>
           <div class="s"><span class="num">3</span><span class="lbl">Documentos</span></div>
@@ -237,10 +787,10 @@
         <p class="paso-de" id="paso-de" aria-live="polite">Paso 1 de 4 · Tipo de permiso</p>
 
         <!-- Paso 1 -->
-        <div class="card paso-inicial" data-step="1">
+        <div class="card" data-step="1" style="margin-top:14px;display:flex;flex-direction:column;gap:16px">
           <div>
             <h2>¿Qué tipo de permiso necesitas?</h2>
-            <p class="small muted margen-superior-4">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
+            <p class="small muted" style="margin-top:4px">Catálogo oficial de la Dirección de Permisos y Cumplimiento del Municipio de Panamá.</p>
           </div>
           <div class="field buscador">
             <label for="q-tramite">Buscar un trámite</label>
@@ -252,23 +802,23 @@
           <p class="sr" id="q-cuenta" aria-live="polite"></p>
           <div>
             <span class="eyebrow">1 · Categoría</span>
-            <div class="cat-grid margen-superior-8" id="cats"></div>
+            <div class="cat-grid" id="cats" style="margin-top:8px"></div>
           </div>
           <div id="perm-wrap" hidden>
             <span class="eyebrow">2 · Permiso específico</span>
-            <div class="opt-list margen-superior-8" id="perms"></div>
+            <div class="opt-list" id="perms" style="margin-top:8px"></div>
           </div>
           <div id="req-wrap" hidden></div>
-          <div class="actions acciones-final">
+          <div class="actions" style="justify-content:flex-end">
             <button class="btn" id="s1-next" disabled>Continuar</button>
           </div>
         </div>
 
         <!-- Paso 2 -->
-        <form class="card paso-asistente" data-step="2" hidden novalidate>
+        <form class="card" data-step="2" hidden style="margin-top:14px;flex-direction:column;gap:16px" novalidate>
           <div>
             <h2>Datos del acto</h2>
-            <p class="small muted margen-superior-4" id="s2-sub">—</p>
+            <p class="small muted" style="margin-top:4px" id="s2-sub">—</p>
           </div>
 
           <div class="row">
@@ -326,18 +876,25 @@
             <span class="hint"><span id="motivo-n">0</span>/600 caracteres · mínimo 20.</span>
           </div>
 
+          <div class="demo-fill">
+            <button type="button" id="s2-demo">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Rellenar con datos de ejemplo</button>
+            <span>Para demostraciones: completa el formulario con un caso válido.</span>
+          </div>
+
           <div id="s2-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
-          <div class="actions acciones-separadas">
+          <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="1">Atrás</button>
             <button class="btn" type="submit">Continuar</button>
           </div>
         </form>
 
         <!-- Paso 3 -->
-        <div class="card paso-asistente" data-step="3" hidden>
+        <div class="card" data-step="3" hidden style="margin-top:14px;flex-direction:column;gap:16px">
           <div>
             <h2>Documentación de respaldo</h2>
-            <p class="small muted margen-superior-4">Un solo archivo <b>PDF</b> de hasta 10&nbsp;MB con los requisitos del permiso seleccionado. El archivo pasa por cinco verificaciones antes de adjuntarse al expediente.</p>
+            <p class="small muted" style="margin-top:4px">Un solo archivo <b>PDF</b> de hasta 10&nbsp;MB con los requisitos del permiso seleccionado. El archivo pasa por cinco verificaciones antes de adjuntarse al expediente.</p>
           </div>
 
           <div id="req-wrap-3"></div>
@@ -348,6 +905,13 @@
             <span class="d1">Arrastra tu PDF aquí o haz clic para elegirlo</span>
             <span class="d2">Solo PDF · máximo 10 MB · un archivo por solicitud</span>
           </button>
+
+          <div class="demo-fill" style="margin-top:10px">
+            <button type="button" id="s3-demo">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Adjuntar PDF de ejemplo</button>
+            <span>Genera un PDF válido y lo pasa por la misma cadena de verificación.</span>
+          </div>
 
           <div id="scan" class="scan" hidden>
             <div class="scan-h">
@@ -364,37 +928,38 @@
           </div>
 
           <div id="s3-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
-          <div class="actions acciones-separadas">
+          <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="2">Atrás</button>
             <button class="btn" id="s3-next" disabled>Continuar</button>
           </div>
         </div>
 
         <!-- Paso 4 -->
-        <div class="card paso-asistente" data-step="4" hidden>
+        <div class="card" data-step="4" hidden style="margin-top:14px;flex-direction:column;gap:16px">
           <div>
             <h2>Revisa antes de enviar</h2>
-            <p class="small muted margen-superior-4">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
+            <p class="small muted" style="margin-top:4px">Al enviar se genera un número de expediente y la solicitud entra al flujo de aprobación. No podrás modificarla después.</p>
           </div>
           <dl class="summary" id="sum"></dl>
-          <div class="actions acciones-compactas">
+          <div class="actions" style="gap:6px">
             <span class="small muted">¿Algo no está bien?</span>
             <button class="btn plain" type="button" data-back="1">Cambiar permiso</button>
             <button class="btn plain" type="button" data-back="2">Cambiar datos</button>
             <button class="btn plain" type="button" data-back="3">Cambiar documento</button>
           </div>
-          <label class="declaracion-solicitud">
-            <input id="s4-ok" type="checkbox" class="casilla-consentimiento">
-            <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b class="texto-principal">Acuerdo Municipal N.° 130 de 2016</b>.</span>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:.83rem;color:var(--ink-2)">
+            <input id="s4-ok" type="checkbox" style="margin-top:3px;width:auto">
+            <span>Declaro bajo gravedad de juramento que la información y los documentos aportados son veraces, conforme al <b style="color:var(--ink)">Acuerdo Municipal N.° 130 de 2016</b>.</span>
           </label>
-          <div class="actions acciones-separadas">
+          <div id="s4-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
+          <div class="actions" style="justify-content:space-between">
             <button class="btn ghost" type="button" data-back="3">Atrás</button>
             <button class="btn" id="s4-send" disabled>Enviar solicitud</button>
           </div>
         </div>
 
         <!-- Comprobante -->
-        <div class="card paso-asistente" data-step="5" hidden>
+        <div class="card" data-step="5" hidden style="margin-top:14px;flex-direction:column;gap:16px">
           <div class="notice ok"><svg class="ic ni" aria-hidden="true"><use href="#i-ok"/></svg><span><b>Solicitud recibida.</b> Recibirás las notificaciones en tu correo registrado.</span></div>
           <dl class="summary" id="receipt"></dl>
           <div class="actions">
@@ -414,8 +979,8 @@
           </div>
           <button class="btn ghost" data-nav="solicitar">Nueva solicitud</button>
         </div>
-        <div class="row margen-superior-18">
-          <div class="field busqueda-expediente">
+        <div class="row" style="margin-top:18px">
+          <div class="field" style="flex:2 1 260px">
             <label for="q">Buscar por expediente o permiso</label>
             <input id="q" type="text" placeholder="Ej. EXP-2026 o «espectáculo»">
           </div>
@@ -430,8 +995,8 @@
             </select>
           </div>
         </div>
-        <div class="exp-list margen-superior-16" id="all-exp"></div>
-        <p class="small muted mensaje-sin-expedientes" id="no-exp" hidden>No hay expedientes que coincidan con la búsqueda.</p>
+        <div class="exp-list" id="all-exp" style="margin-top:16px"></div>
+        <p class="small muted" id="no-exp" hidden style="text-align:center;padding:24px">No hay expedientes que coincidan con la búsqueda.</p>
       </section>
 
       <!-- ---------- CITAS ---------- -->
@@ -444,7 +1009,7 @@
           </div>
         </div>
 
-        <form class="card formulario-cita" id="cita-form" novalidate>
+        <form class="card" id="cita-form" style="margin-top:18px;flex-direction:column;gap:16px;display:flex" novalidate>
           <div class="row">
             <div class="field">
               <label for="c-sede">Sede <span class="req">*</span></label>
@@ -484,22 +1049,22 @@
           </div>
           <div>
             <span class="eyebrow">Horarios disponibles</span>
-            <div class="slots margen-superior-8" id="slots"></div>
+            <div class="slots" id="slots" style="margin-top:8px"></div>
             <div class="leyenda" id="leyenda-slots">
               <span><i aria-hidden="true"></i>Disponible</span>
               <span><i class="ocup" aria-hidden="true"></i>Ocupado</span>
               <span><i class="sel" aria-hidden="true"></i>Elegido</span>
             </div>
-            <p class="small muted margen-superior-6">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m.</p>
+            <p class="small muted" style="margin-top:6px">Turnos de 30 minutos · 8:00 a.m. – 3:30 p.m.</p>
           </div>
           <div id="c-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
-          <div class="actions acciones-final">
+          <div class="actions" style="justify-content:flex-end">
             <button class="btn" type="submit">Confirmar cita</button>
           </div>
         </form>
 
-        <div class="margen-superior-22">
-          <h2 class="margen-inferior-10">Citas reservadas</h2>
+        <div style="margin-top:22px">
+          <h2 style="margin-bottom:10px">Citas reservadas</h2>
           <div class="exp-list" id="citas-list"></div>
           <p class="small muted" id="no-citas" hidden>Aún no tienes citas reservadas.</p>
         </div>
@@ -515,8 +1080,8 @@
           </div>
         </div>
 
-        <div class="row columnas-contacto">
-          <form class="card formulario-contacto" id="ct-form" novalidate>
+        <div class="row" style="margin-top:18px;align-items:stretch">
+          <form class="card" id="ct-form" style="flex:2 1 380px;display:flex;flex-direction:column;gap:14px" novalidate>
             <h2>Enviar un mensaje</h2>
             <div class="row">
               <div class="field">
@@ -551,12 +1116,12 @@
             </div>
             <div id="ct-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
             <div id="ct-ok" class="notice ok" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-ok"/></svg><span></span></div>
-            <div class="actions acciones-final">
+            <div class="actions" style="justify-content:flex-end">
               <button class="btn" type="submit">Enviar mensaje</button>
             </div>
           </form>
 
-          <div class="card canales-contacto">
+          <div class="card" style="flex:1 1 260px;display:flex;flex-direction:column;gap:16px">
             <h2>Otros canales</h2>
             <div class="kv">
               <span class="k">Central telefónica</span>
@@ -589,7 +1154,7 @@
 
   <dialog class="detalle" id="detalle" aria-labelledby="det-titulo">
     <div class="det-h">
-      <div class="ancho-flexible">
+      <div style="min-width:0">
         <div class="code" id="det-code">—</div>
         <h2 id="det-titulo">—</h2>
       </div>
@@ -598,6 +1163,1805 @@
     <div class="det-b" id="det-cuerpo"></div>
   </dialog>
 </div>
-<script src="app.js"></script>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. DATOS — catálogo oficial de la Dirección de Permisos
+      y Cumplimiento del Municipio de Panamá (35 trámites).
+   ============================================================ */
+
+const DOCS = {
+  nota:   "Nota de solicitud dirigida al Alcalde de Panamá",
+  ced:    "Copia de cédula o pasaporte del solicitante",
+  aviso:  "Aviso de Operación vigente",
+  paz:    "Paz y Salvo Municipal",
+  rp:     "Certificado del Registro Público (personas jurídicas)",
+  poliza: "Póliza de responsabilidad civil",
+  bomb:   "Visto bueno del Cuerpo de Bomberos de Panamá",
+  plano:  "Plano de ubicación o croquis del sitio",
+  idoneo: "Idoneidad del personal técnico responsable",
+  minsa:  "Registro sanitario del MINSA",
+  ficha:  "Ficha técnica de los productos a utilizar",
+  ipf:    "Informe Previo Favorable vigente",
+  ruta:   "Ruta y horario detallado del recorrido",
+  veh:    "Registro vehicular y revisado vigente",
+  seg:    "Plan de seguridad y evacuación",
+  ambos:  "Nota de no objeción del corregimiento"
+};
+
+let CATALOGO = [
+  { cat:"Espectáculos y eventos públicos", icon:"evento", items:[
+    { id:"ESP-500-",  n:"Espectáculo Público — menos de 500 personas", d:15, aforo:[1,499],
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.poliza,DOCS.bomb] },
+    { id:"ESP-4000",  n:"Espectáculo Público — menos de 4,000 personas", d:20, aforo:[500,3999],
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.poliza,DOCS.bomb,DOCS.seg,DOCS.plano] },
+    { id:"ESP-500+",  n:"Espectáculo Público — más de 500 personas", d:25, aforo:[500,60000],
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.poliza,DOCS.bomb,DOCS.seg,DOCS.plano,DOCS.rp] },
+    { id:"FEST",      n:"Festividad", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.ambos,DOCS.poliza,DOCS.bomb] },
+    { id:"BANDAS",    n:"Práctica de Bandas Independientes", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.ambos,DOCS.ruta] },
+    { id:"PASEO",     n:"Paseo o Excursiones", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.ruta,DOCS.veh,DOCS.poliza] },
+    { id:"CHIVA",     n:"Chiva Parrandera", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.veh,DOCS.poliza,DOCS.ruta,DOCS.aviso] },
+    { id:"INVIT",     n:"Invitación de la Alcaldía de Panamá", d:8,
+      req:[DOCS.nota,DOCS.ced] }
+  ]},
+  { cat:"Publicidad y uso de espacio público", items:[
+    { id:"PUB-TEMP",  n:"Instalación de Publicidad Eventual o Temporal", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,DOCS.ipf] },
+    { id:"BANDEROLA", n:"Instalación de Banderolas Móviles", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano] },
+    { id:"ESP-EST",   n:"Uso de Espacio Público para Estacionamiento", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,DOCS.poliza] },
+    { id:"ACERA",     n:"Uso Temporal de Aceras", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano] },
+    { id:"CASCO",     n:"Uso Temporal de Espacio Público — Casco Antiguo", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,DOCS.poliza,"Visto bueno de la Oficina del Casco Antiguo"] }
+  ]},
+  { cat:"Sonido y unidades móviles", items:[
+    { id:"SON-TEMP",  n:"Servicio de Unidad Móvil de Sonido u Audio — Temporal", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.veh,DOCS.ruta] },
+    { id:"SON-PERM",  n:"Servicio de Unidad Móvil de Sonido u Audio", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.veh,DOCS.ruta] }
+  ]},
+  { cat:"Permisos nocturnos", items:[
+    { id:"NOC-A",     n:"Permiso Nocturno Categoría A", d:25,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.rp,DOCS.bomb,DOCS.ipf,DOCS.plano] },
+    { id:"NOC-A-REN", n:"Renovación de Permiso Nocturno Categoría A", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.paz,"Permiso nocturno del período anterior",DOCS.bomb] },
+    { id:"NOC-B",     n:"Permiso Nocturno Categoría B", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.bomb,DOCS.ipf] },
+    { id:"NOC-C",     n:"Permiso Nocturno Categoría C", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.bomb,DOCS.ipf] },
+    { id:"NOC-D",     n:"Permiso Nocturno Categoría D", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.bomb,DOCS.ipf] }
+  ]},
+  { cat:"Talleres", items:[
+    { id:"TAL-INST",  n:"Instalación y Operación de Taller", d:25,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.ipf,DOCS.plano,DOCS.bomb] },
+    { id:"TAL-HOR",   n:"Extensión de Horario para Taller", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,"Permiso de operación del taller"] },
+    { id:"TAL-MOV",   n:"Operación de Taller Móvil", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.veh,DOCS.idoneo] },
+    { id:"TAL-COMB",  n:"Taller — Extensión de Horario y Taller Móvil", d:18,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.veh,DOCS.idoneo] }
+  ]},
+  { cat:"Salud y saneamiento ambiental", items:[
+    { id:"DESINF",    n:"Permiso de Desinfección", d:15,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.minsa,DOCS.idoneo,DOCS.ficha] },
+    { id:"DESINF-A",  n:"Actualización de Desinfección", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.minsa,DOCS.ficha] },
+    { id:"GICP",      n:"Gestión Integral de Control de Plagas", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.minsa,DOCS.idoneo,DOCS.ficha,DOCS.paz] },
+    { id:"GICP-REN",  n:"Renovación de Gestión Integral de Control de Plagas", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.paz,DOCS.minsa,"Permiso GICP del período anterior"] },
+    { id:"GICP-ACT",  n:"Actualización de Gestión Integral de Control de Plagas", d:10,
+      req:[DOCS.nota,DOCS.ced,DOCS.minsa,DOCS.ficha,DOCS.idoneo] }
+  ]},
+  { cat:"Comercio y actividades especiales", items:[
+    { id:"GANADO",    n:"Guía de Traslado de Ganado", d:5,
+      req:[DOCS.nota,DOCS.ced,"Certificado de salud animal del MIDA",DOCS.veh,DOCS.ruta] },
+    { id:"GRUAS",     n:"Inscripción de Grúas y Almacenamiento", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.rp,DOCS.veh,DOCS.poliza] },
+    { id:"NAVIDAD",   n:"Venta de Árboles de Navidad", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz,DOCS.plano,"Permiso fitosanitario del MIDA"] },
+    { id:"FERRETE",   n:"Ferrete", d:8,
+      req:[DOCS.nota,DOCS.ced,DOCS.aviso,DOCS.paz] }
+  ]},
+  { cat:"Informes previos", items:[
+    { id:"IPF",       n:"Informe Previo Favorable", d:20,
+      req:[DOCS.nota,DOCS.ced,DOCS.rp,DOCS.plano,"Certificación de uso de suelo",DOCS.bomb] },
+    { id:"IPF-ACT",   n:"Actualización de Informe Previo Favorable", d:12,
+      req:[DOCS.nota,DOCS.ced,DOCS.ipf,DOCS.plano] }
+  ]}
+];
+
+const CORREGIMIENTOS = ["24 de Diciembre","Alcalde Díaz","Ancón","Bella Vista","Betania","Caimitillo",
+  "Calidonia","Chilibre","Curundú","Don Bosco","El Chorrillo","Ernesto Córdoba Campos","Juan Díaz",
+  "Las Cumbres","Las Garzas","Las Mañanitas","Pacora","Parque Lefevre","Pedregal","Pueblo Nuevo",
+  "Río Abajo","Rufina Alfaro","San Felipe","San Francisco","San Martín","Santa Ana","Tocumen","Ernesto Córdoba"];
+
+const TIPOS_ACTO = ["Concierto o presentación musical","Feria o exposición comercial","Actividad deportiva",
+  "Actividad religiosa","Desfile o pasacalle","Actividad cultural o artística","Verbena o baile popular",
+  "Rodaje audiovisual","Actividad corporativa privada","Actividad benéfica","Instalación o montaje",
+  "Operación comercial permanente","Servicio técnico o de saneamiento","Otro"];
+
+const MAX_MB = 10;
+
+/* ============================================================
+   2-bis. CONEXIÓN CON LA API  (backend/main.py)
+
+   El portal funciona de dos maneras:
+     · modo "api"  — hay backend: las cuentas, los expedientes y los
+                     documentos viven en la base de datos.
+     · modo "demo" — no hay backend: todo queda en memoria, como antes.
+   Se decide al arrancar, preguntando por GET /salud.
+   ============================================================ */
+
+// Direcciones donde buscar la API, en orden. Se prueban hasta que una
+// conteste, y la que funcione queda recordada.
+//
+// Por qué más de una: en Windows «localhost» puede resolverse primero como
+// IPv6 (::1) mientras uvicorn escucha sólo en IPv4 (127.0.0.1). Las dos
+// formas nombran la misma máquina, pero el navegador no siempre reintenta.
+// Probar ambas evita ese desencuentro, que no da ningún error visible.
+const DIRECCIONES_API = (() => {
+  const limpia = u => String(u).replace(/\/+$/, "");
+  const porDefecto = ["http://localhost:8000", "http://127.0.0.1:8000"];
+  const unicas = lista => lista.filter((v, i, a) => a.indexOf(v) === i);
+  try {
+    const q = new URLSearchParams(location.search).get("api");
+    if (q) { try { localStorage.setItem("vum-api", q); } catch {} return [limpia(q)]; }
+    const g = localStorage.getItem("vum-api");
+    if (g) return unicas([limpia(g), ...porDefecto]);   // la recordada primero
+  } catch {}
+  return porDefecto;
+})();
+
+let API_BASE = DIRECCIONES_API[0];
+
+let MODO  = "demo";      // pasa a "api" si /salud responde
+let TOKEN = null;        // token de sesión que devuelve POST /api/sesiones
+
+class ApiError extends Error {
+  constructor(status, detalle){ super(detalle); this.status = status; }
+}
+
+/* Una sola puerta de salida al backend: pone el token, traduce los errores de
+   FastAPI a un mensaje legible y corta si el servidor no contesta. */
+async function api(ruta, { metodo = "GET", cuerpo = null, archivo = null, crudo = false, ms = 45000 } = {}){
+  const ctrl  = new AbortController();
+  const corte = setTimeout(() => ctrl.abort(), ms);
+  const op = { method: metodo, headers: {}, signal: ctrl.signal };
+  if (TOKEN) op.headers["Authorization"] = "Bearer " + TOKEN;
+  if (archivo){
+    const fd = new FormData();
+    fd.append("archivo", archivo, archivo.name);
+    op.body = fd;                                  // sin Content-Type: lo pone el navegador con su boundary
+  } else if (cuerpo){
+    op.headers["Content-Type"] = "application/json";
+    op.body = JSON.stringify(cuerpo);
+  }
+
+  let r;
+  try { r = await fetch(API_BASE + ruta, op); }
+  catch {
+    throw new ApiError(0, "No pudimos conectar con el servidor. Comprueba que la API esté levantada en " + API_BASE + ".");
+  } finally { clearTimeout(corte); }
+
+  if (r.status === 204) return null;
+  if (!r.ok){
+    let detalle = "Error " + r.status;
+    try {
+      const j = await r.json();
+      if (typeof j.detail === "string") detalle = j.detail;
+      else if (Array.isArray(j.detail) && j.detail[0]?.msg) detalle = j.detail[0].msg;
+    } catch {}
+    if (r.status === 401 && TOKEN) olvidarSesion();   // el token caducó
+    throw new ApiError(r.status, detalle);
+  }
+  return crudo ? r.blob() : r.json();
+}
+
+/* --- sesión recordada entre recargas -------------------------------------- */
+function recordarSesion(token, usuario){
+  TOKEN = token;
+  try { localStorage.setItem("vum-sesion", JSON.stringify({ token, usuario })); } catch {}
+}
+function olvidarSesion(){
+  TOKEN = null;
+  try { localStorage.removeItem("vum-sesion"); } catch {}
+}
+function sesionGuardada(){
+  try { return JSON.parse(localStorage.getItem("vum-sesion") || "null"); } catch { return null; }
+}
+
+/* --- traductores entre la forma de la API y la del portal ------------------ */
+function cuentaDesdeAPI(u){
+  return { ...u, org: u.organizacion ?? u.org };     // la API dice organizacion; el portal, org
+}
+function expedienteDesdeAPI(e){
+  const creado = String(e.creado || "");
+  return {
+    code: e.codigo,
+    permiso: e.permiso,
+    lugar: e.corregimiento ? e.lugar + ", " + e.corregimiento : e.lugar,
+    fecha: e.fecha, estado: e.estado, etapa: e.etapa,
+    creado: creado.slice(0, 10),
+    sello: creado.replace("T", " "),
+    hash: e.documento_sha256 || e.documento,
+    tipoActo: e.tipo_acto, hIni: e.hora_inicio, hFin: e.hora_fin,
+    aforo: e.aforo, resp: e.responsable, tel: e.telefono, motivo: e.motivo,
+    solicitante: e.solicitante, permisoId: e.permiso_id
+  };
+}
+// La API devuelve el catálogo ordenado alfabéticamente; el portal lo muestra
+// en el orden en que fue diseñado, con las categorías nuevas al final.
+const ORDEN_CATEGORIAS = CATALOGO.map(c => c.cat);
+
+/* ============================================================
+   2-ter. ROLES
+
+   Una cuenta es "ciudadano" (solicita) o "revisor"/"director" (resuelve).
+   El rol lo dice la API al iniciar sesión; el portal sólo decide qué pintar.
+   Esconder un botón no es seguridad: la bandeja y el PATCH los protege el
+   backend con la dependencia funcionario_actual.
+   ============================================================ */
+
+const FUNCIONARIOS = ["revisor", "director"];
+const esFuncionario = u => FUNCIONARIOS.includes((u || state.user || {}).rol);
+
+// Por dónde puede avanzar un expediente. En modo demostración manda esta
+// copia; con backend la reemplaza la que envía GET /api/bandeja, que es la
+// misma que aplica la base de datos.
+let TRANSICIONES = {
+  "Recibido":    ["En revisión", "Rechazado"],
+  "En revisión": ["Aprobado", "Subsanación", "Rechazado"],
+  "Subsanación": ["En revisión", "Rechazado"],
+  "Aprobado":    [],
+  "Rechazado":   []
+};
+const EXIGEN_COMENTARIO = ["Subsanación", "Rechazado"];
+const ETAPAS = {
+  "Recibido":    "En cola de asignación · Dirección de Permisos",
+  "En revisión": "Revisión técnica · Dirección de Permisos",
+  "Subsanación": "Pendiente de subsanación por el solicitante",
+  "Aprobado":    "Permiso emitido · descargable en ventanilla",
+  "Rechazado":   "Resolución negativa notificada al solicitante"
+};
+const CLASE_BOTON = { "Aprobado":"ok", "Rechazado":"crit", "Subsanación":"warn", "En revisión":"" };
+
+function citaDesdeAPI(c){
+  return { turno:c.turno, sede:c.sede, motivo:c.motivo, fecha:c.fecha, hora:c.hora, exp:c.expediente || "" };
+}
+
+/* Todo lo que el solicitante ve al entrar sale de la base. Si el backend es
+   anterior a GET /api/citas, la lista de citas queda vacía y el resto sigue. */
+async function cargarDatosDelUsuario(){
+  state.expedientes = (await api("/api/solicitudes")).map(expedienteDesdeAPI);
+  try { state.citas = (await api("/api/citas")).map(citaDesdeAPI); }
+  catch { state.citas = []; }
+}
+
+function catalogoDesdeAPI(lista){
+  const porCategoria = new Map();
+  for (const p of lista){
+    if (!porCategoria.has(p.categoria)) porCategoria.set(p.categoria, []);
+    porCategoria.get(p.categoria).push({
+      id: p.id, n: p.nombre, d: p.dias,
+      aforo: Array.isArray(p.aforo) ? p.aforo : null,
+      req: Array.isArray(p.requisitos) ? p.requisitos : String(p.requisitos || "").split("\n").filter(Boolean)
+    });
+  }
+  const puesto = c => { const i = ORDEN_CATEGORIAS.indexOf(c); return i === -1 ? 999 : i; };
+  return Array.from(porCategoria, ([cat, items]) => ({ cat, items }))
+              .sort((a, b) => puesto(a.cat) - puesto(b.cat));
+}
+
+
+/* ============================================================
+   2. ESTADO
+   ============================================================ */
+
+const state = {
+  user: null,
+  rolPuerta: "ciudadano",      // por qué puerta dijo entrar: solicitante o funcionario
+  bandeja: [],                 // lo que ve el funcionario
+  cuentas: [
+    { nombre:"Diego", apellido:"López", edad:22, cedula:"8-912-345", rol:"ciudadano",
+      org:"Universidad Tecnológica de Panamá", email:"demo@mupa.gob.pa", pass:"demo1234" },
+    { nombre:"Ana", apellido:"Pérez", edad:34, cedula:null, rol:"revisor",
+      org:"Dirección de Permisos y Cumplimiento", email:"revisor@mupa.gob.pa", pass:"revisor1234" }
+  ],
+  expedientes: [
+    { code:"EXP-2026-004182", permiso:"Espectáculo Público — menos de 4,000 personas",
+      lugar:"Parque Omar, San Francisco", fecha:"2026-10-18", estado:"En revisión",
+      etapa:"Revisión técnica · Dirección de Permisos", creado:"2026-09-12",
+      hash:"9f2c41ab77d0e5b3c8a1f64e2d9b0357cc84e1a6b2f7d3905e8c6a4b1d7f2093" },
+    { code:"EXP-2026-003914", permiso:"Uso Temporal de Aceras",
+      lugar:"Ave. Central, Santa Ana", fecha:"2026-09-30", estado:"Aprobado",
+      etapa:"Permiso emitido · descargable en ventanilla", creado:"2026-08-28",
+      hash:"3b7e19c4a5d82f60b1e93c7a0d4f8256be31a9c705d2e6f8143b0c9a7e5d2f61" },
+    { code:"EXP-2026-004055", permiso:"Permiso Nocturno Categoría B",
+      lugar:"Calle Uruguay, Bella Vista", fecha:"2026-11-02", estado:"Subsanación",
+      etapa:"Falta póliza de responsabilidad civil vigente", creado:"2026-09-05",
+      hash:"c41d8a0b62f7e395d0a7c8b41e6f2039a75db3c0e18f6425bd93a0c7e214f8d6" }
+  ],
+  citas: [],
+  sel: { cat:null, perm:null, datos:null, doc:null },
+  step: 1
+};
+
+// Los expedientes de ejemplo nacen con historial, para que la bandeja del modo
+// demostración se comporte igual que la que sirve la base de datos.
+state.expedientes.forEach(x => {
+  x.solicitante = "demo@mupa.gob.pa";
+  x.hist = [{ estado:"Recibido", etapa:ETAPAS["Recibido"], en:x.creado + "T08:12:00",
+              actor:"demo@mupa.gob.pa", rol:"ciudadano", comentario:null }];
+  if (x.estado !== "Recibido")
+    x.hist.push({ estado:x.estado, etapa:x.etapa, en:x.creado + "T14:30:00",
+                  actor:"revisor@mupa.gob.pa", rol:"revisor", comentario:null });
+});
+
+/* ============================================================
+   3. UTILIDADES
+   ============================================================ */
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+let ALL_PERMS = CATALOGO.flatMap(c => c.items.map(i => ({ ...i, cat:c.cat })));
+
+function toast(msg){
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg; t.setAttribute("role","status");
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function showErr(el, msg, campoId){
+  const zona = el.closest("form, .card") || document;
+  $$('[aria-invalid="true"]', zona).forEach(limpiarCampo);
+  if (!msg){ el.hidden = true; return; }
+  el.hidden = false; el.lastElementChild.textContent = msg;
+  const campo = campoId && $("#" + campoId);
+  if (campo){
+    // El error queda unido al campo: se ve marcado, el lector de pantalla lee
+    // el mensaje y el foco llega justo donde hay que corregir.
+    campo.setAttribute("aria-invalid", "true");
+    campo.setAttribute("aria-describedby", el.id);
+    campo.focus();
+  } else {
+    el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
+}
+function limpiarCampo(c){
+  c.removeAttribute("aria-invalid");
+  if (/-err$/.test(c.getAttribute("aria-describedby") || "")) c.removeAttribute("aria-describedby");
+}
+["input", "change"].forEach(ev => document.addEventListener(ev, e => {
+  if (e.target instanceof Element && e.target.getAttribute("aria-invalid") === "true") limpiarCampo(e.target);
+}));
+document.addEventListener("click", e => {
+  const b = e.target.closest(".ver-clave"); if (!b) return;
+  const campo = $("#" + b.getAttribute("aria-controls"));
+  const ver = campo.type === "password";
+  campo.type = ver ? "text" : "password";
+  b.setAttribute("aria-pressed", String(ver));
+});
+function fechaLarga(iso){
+  if (!iso) return "—";
+  const [y,m,d] = iso.split("-").map(Number);
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio",
+                 "agosto","septiembre","octubre","noviembre","diciembre"];
+  return `${d} de ${meses[m-1]} de ${y}`;
+}
+// Fecha local (Panamá). toISOString() usa UTC: después de las 7 p. m. daba el día siguiente.
+function aISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function hoyISO(off = 0){
+  const d = new Date(); d.setDate(d.getDate() + off);
+  return aISO(d);
+}
+function estadoClase(e){
+  return { "Aprobado":"ok", "En revisión":"warn", "Subsanación":"crit",
+           "Rechazado":"crit", "Recibido":"info" }[e] || "info";
+}
+function nuevoExpediente(){
+  const n = String(4200 + state.expedientes.length * 7 + Math.floor(Math.random()*90)).padStart(6,"0");
+  return `EXP-2026-${n}`;
+}
+
+/* ============================================================
+   4. TEMA
+   ============================================================ */
+
+function temaOscuro(){
+  const cur = document.documentElement.getAttribute("data-theme");
+  return cur === "dark" || (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
+}
+function pintarBotonTema(){ $("#btn-theme").setAttribute("aria-pressed", String(temaOscuro())); }
+$("#btn-theme").addEventListener("click", () => {
+  const nuevo = temaOscuro() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", nuevo);
+  try { localStorage.setItem("vum-tema", nuevo); } catch {}   // modo privado: sólo no se recuerda
+  pintarBotonTema();
+});
+pintarBotonTema();
+
+/* ============================================================
+   5. AUTENTICACIÓN
+   ============================================================ */
+
+function mostrarPanel(cual){
+  const login = cual === "login";
+  $("#tab-login").setAttribute("aria-selected", login);
+  $("#tab-signup").setAttribute("aria-selected", !login);
+  $("#pane-login").hidden = !login;
+  $("#pane-signup").hidden = login;
+  $("#pane-login").style.display = login ? "flex" : "none";
+  $("#pane-signup").style.display = login ? "none" : "flex";
+}
+/* --- Por qué puerta entra: solicitante o funcionario ---------------------
+   No es decorativo ni es seguridad: fija la expectativa y, si no coincide con
+   el rol real de la cuenta, el portal lo dice en vez de dejar a alguien
+   perdido en una sección que no le toca. Quien decide de verdad es la API. */
+const PUERTAS = {
+  ciudadano:   { titulo:"Entrar al portal",
+                 ayuda:"Para ciudadanos y empresas que solicitan un permiso." },
+  funcionario: { titulo:"Entrar a la bandeja",
+                 ayuda:"Para revisores y directores de la Dirección de Permisos y Cumplimiento." }
+};
+
+function elegirPuerta(rol){
+  state.rolPuerta = rol;
+  $$("#li-rol button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.rol === rol)));
+  $("#li-titulo").textContent = PUERTAS[rol].titulo;
+  $("#li-ayuda").textContent  = PUERTAS[rol].ayuda;
+  $("#go-signup").closest("p").hidden = rol === "funcionario";   // nadie se registra como funcionario
+  showErr($("#li-err"), null);
+  pintarModo();
+}
+$("#li-rol").addEventListener("click", e => {
+  const b = e.target.closest("[data-rol]"); if (b) elegirPuerta(b.dataset.rol);
+});
+
+$("#tab-login").addEventListener("click", () => mostrarPanel("login"));
+$("#tab-signup").addEventListener("click", () => mostrarPanel("signup"));
+$("#go-signup").addEventListener("click", e => { e.preventDefault(); mostrarPanel("signup"); });
+$("#go-login").addEventListener("click", e => { e.preventDefault(); mostrarPanel("login"); });
+
+$("#pane-login").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("#li-email").value.trim().toLowerCase();
+  const pass  = $("#li-pass").value;
+  if (!email || !pass) return showErr($("#li-err"), "Escribe tu correo y tu contraseña.", email ? "li-pass" : "li-email");
+
+  if (MODO === "demo"){
+    const u = state.cuentas.find(c => c.email.toLowerCase() === email);
+    if (!u || u.pass !== pass)
+      return showErr($("#li-err"), "El correo o la contraseña no coinciden. Revisa e inténtalo de nuevo.");
+    const mal = puertaEquivocada(u);
+    if (mal) return showErr($("#li-err"), mal);
+    showErr($("#li-err"), null);
+    return entrar(u);
+  }
+
+  const boton = $("#pane-login button[type=submit]");
+  boton.disabled = true; boton.textContent = "Entrando…";
+  try {
+    const r = await api("/api/sesiones", { metodo:"POST", cuerpo:{ email, password: pass } });
+    const mal = puertaEquivocada(r.usuario);
+    if (mal){
+      // La sesión se abrió en el servidor: se cierra, no se deja colgando.
+      TOKEN = r.token;
+      try { await api("/api/sesiones", { metodo:"DELETE", ms:6000 }); } catch {}
+      olvidarSesion();
+      return showErr($("#li-err"), mal);
+    }
+    showErr($("#li-err"), null);
+    await entrarConAPI(r.token, r.usuario);
+  } catch (err) {
+    const pista = err.status === 401 && email === "demo@mupa.gob.pa"
+      ? " La cuenta de prueba no existe todavía en la base de datos: créala en la pestaña «Crear cuenta»."
+      : "";
+    showErr($("#li-err"), err.message + pista);
+  } finally {
+    boton.disabled = false; boton.textContent = "Iniciar sesión";
+  }
+});
+
+/* Devuelve el mensaje si la cuenta no corresponde a la puerta elegida, o null.
+   Un funcionario que entra por la puerta del solicitante sí pasa: va a su
+   bandeja y se le avisa. Al revés no: sería prometerle permisos que no tiene. */
+function puertaEquivocada(usuario){
+  if (state.rolPuerta === "funcionario" && !esFuncionario(usuario))
+    return "Esa cuenta no tiene permisos de funcionario. Entra por «Soy solicitante».";
+  return null;
+}
+
+/* Entra con sesión del servidor: guarda el token y trae los expedientes reales. */
+async function entrarConAPI(token, usuario){
+  recordarSesion(token, usuario);
+  const u = cuentaDesdeAPI(usuario);
+  state.user = u;
+  if (!esFuncionario(u)){
+    try { await cargarDatosDelUsuario(); }
+    catch { state.expedientes = []; state.citas = []; }
+  }
+  entrar(u);        // el funcionario no tiene expedientes propios: carga su bandeja
+}
+
+$("#pane-signup").addEventListener("submit", async e => {
+  e.preventDefault();
+  const v = id => $("#" + id).value.trim();
+  const err = $("#su-err");
+  const campos = { nombre:v("su-nombre"), apellido:v("su-apellido"), edad:v("su-edad"),
+                   cedula:v("su-cedula"), org:v("su-org"), email:v("su-email").toLowerCase() };
+
+  if (!campos.nombre || !campos.apellido) return showErr(err, "Escribe tu nombre y tu apellido.", campos.nombre ? "su-apellido" : "su-nombre");
+  const edad = Number(campos.edad);
+  if (!edad || edad < 18) return showErr(err, "Debes tener al menos 18 años para tramitar un permiso.", "su-edad");
+  if (edad > 110) return showErr(err, "Revisa la edad ingresada.", "su-edad");
+  if (!campos.org) return showErr(err, "Indica el lugar donde colaboras, o escribe «Independiente».", "su-org");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(campos.email))
+    return showErr(err, "El correo electrónico no tiene un formato válido.", "su-email");
+  if (MODO === "demo" && state.cuentas.some(c => c.email.toLowerCase() === campos.email))
+    return showErr(err, "Ya existe una cuenta con ese correo. Inicia sesión.", "su-email");
+  const p1 = $("#su-pass").value, p2 = $("#su-pass2").value;
+  if (p1.length < 8) return showErr(err, "La contraseña debe tener al menos 8 caracteres.", "su-pass");
+  if (p1 !== p2) return showErr(err, "Las contraseñas no coinciden.", "su-pass2");
+  if (!$("#su-ok").checked) return showErr(err, "Debes autorizar el tratamiento de tus datos para continuar.", "su-ok");
+
+  showErr(err, null);
+
+  if (MODO === "demo"){
+    const cuenta = { ...campos, edad, pass:p1, rol:"ciudadano" };
+    state.cuentas.push(cuenta);
+    entrar(cuenta);
+    return toast("Cuenta creada sólo en este navegador: se perderá al recargar.");
+  }
+
+  const boton = $("#pane-signup button[type=submit]");
+  boton.disabled = true; boton.textContent = "Creando…";
+  try {
+    const r = await api("/api/cuentas", { metodo:"POST", cuerpo:{
+      nombre: campos.nombre, apellido: campos.apellido, edad,
+      organizacion: campos.org, email: campos.email,
+      cedula: campos.cedula || null, password: p1, acepta_tratamiento: true
+    }});
+    await entrarConAPI(r.token, r.usuario);           // la API ya devuelve la sesión abierta
+    toast("Cuenta creada y guardada en la base de datos.");
+  } catch (e2) {
+    showErr(err, e2.message, e2.status === 409 ? "su-email" : null);
+  } finally {
+    boton.disabled = false; boton.textContent = "Crear cuenta";
+  }
+});
+
+function entrar(u){
+  u = { ...u, org: u.org ?? u.organizacion };
+  state.user = u;
+  $("#view-auth").hidden = true;
+  $("#view-app").hidden = false;
+  $("#u-name").textContent = `${u.nombre} ${u.apellido}`;
+  $("#u-org").textContent  = u.org;
+  $("#u-ini").textContent  = (u.nombre[0] + u.apellido[0]).toUpperCase();
+  const h = new Date().getHours();
+  $("#greet").textContent = `${h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches"}, ${u.nombre}`;
+  $("#ct-nombre").value = `${u.nombre} ${u.apellido}`;
+  $("#ct-email").value  = u.email;
+  $("#f-resp").value    = `${u.nombre} ${u.apellido}`;
+
+  // Un solo portal, dos caras. El menú se arma según el rol de la cuenta.
+  const funcionario = esFuncionario(u);
+  $$("[data-solo]").forEach(b =>
+    b.hidden = b.dataset.solo !== (funcionario ? "funcionario" : "ciudadano"));
+  if (funcionario){
+    $("#u-org").textContent = `${u.rol[0].toUpperCase()}${u.rol.slice(1)} · ${u.org}`;
+    ir("bandeja");
+    cargarBandeja();
+  } else {
+    ir("inicio");
+    pintarTodo();
+  }
+  window.scrollTo(0, 0);
+}
+
+$("#btn-logout").addEventListener("click", async () => {
+  if (MODO === "api" && TOKEN){
+    try { await api("/api/sesiones", { metodo:"DELETE", ms:8000 }); } catch {}   // la sesión se borra igual
+    olvidarSesion();
+  }
+  state.user = null;
+  state.bandeja = [];
+  $("#view-app").hidden = true;
+  $("#view-auth").hidden = false;
+  $("#li-pass").value = "";
+  mostrarPanel("login");
+  elegirPuerta("ciudadano");
+  window.scrollTo(0, 0);
+});
+
+/* ============================================================
+   6. NAVEGACIÓN
+   ============================================================ */
+
+function ir(pagina){
+  $$("[data-page]").forEach(s => s.hidden = s.dataset.page !== pagina);
+  $$("nav.menu button").forEach(b =>
+    b.dataset.nav === pagina ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+  window.scrollTo({ top:0, behavior:"smooth" });
+  // Lectores de pantalla y teclado: el foco llega al título de la sección nueva.
+  const titulo = $(`[data-page="${pagina}"] h1`);
+  if (titulo){ titulo.tabIndex = -1; titulo.focus({ preventScroll:true }); }
+  const nombre = $(`nav.menu [data-nav="${pagina}"]`)?.textContent.trim();
+  document.title = `${nombre} · Ventanilla Única Municipal`;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-nav]");
+  if (b) ir(b.dataset.nav);
+});
+
+/* ============================================================
+   7. PANEL E INDICADORES
+   ============================================================ */
+
+function tarjetaExpediente(x){
+  return `<article class="exp st-${estadoClase(x.estado)}">
+    <div style="min-width:0">
+      <div class="code">${esc(x.code)}</div>
+      <div class="name">${esc(x.permiso)}</div>
+      <div class="meta"><i>${esc(x.lugar)}</i><i>${fechaLarga(x.fecha)}</i><i>${esc(x.etapa)}</i></div>
+    </div>
+    <div class="exp-der">
+      <span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span>
+      <button type="button" class="btn ghost ver" data-exp="${esc(x.code)}" aria-label="Ver detalle de ${esc(x.code)}">Ver detalle</button>
+    </div>
+  </article>`;
+}
+
+function pintarTodo(){
+  const e = state.expedientes;
+  $("#k-total").textContent = e.length;
+  $("#k-rev").textContent   = e.filter(x => x.estado === "En revisión").length;
+  $("#k-apr").textContent   = e.filter(x => x.estado === "Aprobado").length;
+  $("#k-sub").textContent   = e.filter(x => x.estado === "Subsanación").length;
+  $("#recent").innerHTML    = e.slice(0, 3).map(tarjetaExpediente).join("");
+  const pendientes = e.filter(x => x.estado === "Subsanación");
+  $("#atencion").hidden = !pendientes.length;
+  $("#at-lista").innerHTML = pendientes.map(x =>
+    `<div class="at-r">
+       <div style="min-width:0"><div class="code">${esc(x.code)}</div>
+         <div class="name">${esc(x.permiso)}</div><p class="small muted">${esc(x.etapa)}</p></div>
+       <button type="button" class="btn" data-exp="${esc(x.code)}" aria-label="Resolver ${esc(x.code)}">Resolver</button>
+     </div>`).join("");
+  filtrarExpedientes();
+  pintarCitas();
+  pintarSlots();      // al entrar ya se sabe si hay backend: la rejilla se repinta con el modo real
+  const sel = $("#c-exp");
+  sel.innerHTML = '<option value="">Ninguno / consulta general</option>' +
+    e.map(x => `<option>${esc(x.code)} — ${esc(x.permiso)}</option>`).join("");
+}
+
+function filtrarExpedientes(){
+  const q   = $("#q").value.trim().toLowerCase();
+  const est = $("#q-est").value;
+  const r = state.expedientes.filter(x =>
+    (!est || x.estado === est) &&
+    (!q || x.code.toLowerCase().includes(q) || x.permiso.toLowerCase().includes(q) ||
+     x.lugar.toLowerCase().includes(q)));
+  $("#all-exp").innerHTML = r.map(tarjetaExpediente).join("");
+  $("#no-exp").hidden = r.length > 0;
+}
+$("#q").addEventListener("input", filtrarExpedientes);
+
+document.addEventListener("click", e => {
+  const s = e.target.closest(".stat[data-filtro]"); if (!s) return;
+  ir("expedientes");
+  $("#q").value = ""; $("#q-est").value = s.dataset.filtro;
+  filtrarExpedientes();
+});
+
+/* ---------- detalle del expediente ---------- */
+const QUE_SIGUE = {
+  "Recibido":    () => "Tu solicitud está en cola para asignarse a un revisor. Por ahora no tienes que hacer nada.",
+  "En revisión": () => "Un revisor de la Dirección está evaluando tu expediente. Si necesita algo, te escribirá a tu correo.",
+  "Subsanación": x  => `Falta algo para continuar: ${x.etapa}. Entrégalo en una cita y la revisión sigue desde donde quedó.`,
+  "Aprobado":    x  => `Tu permiso fue aprobado. ${x.etapa}.`,
+  "Rechazado":   x  => `La solicitud no fue aprobada. ${x.etapa}. Puedes escribirnos si tienes dudas.`,
+};
+
+function lineaDeTiempo(x){
+  const actual = x.estado === "Recibido" ? 0 : ["En revisión", "Subsanación"].includes(x.estado) ? 1 : 2;
+  const pasos = ["Recibido", x.estado === "Subsanación" ? "Subsanación pendiente" : "En revisión",
+                 ["Aprobado", "Rechazado"].includes(x.estado) ? x.estado : "Resolución"];
+  return `<ol class="linea" aria-label="Avance del trámite">${pasos.map((p, i) =>
+    `<li data-s="${i < actual ? "done" : i === actual ? "on" : ""}"
+         class="${i === actual && x.estado === "Subsanación" ? "crit" : ""}"
+         ${i === actual ? 'aria-current="step"' : ""}>${esc(p)}</li>`).join("")}</ol>`;
+}
+
+async function abrirDetalle(code){
+  const x = state.expedientes.find(e => e.code === code)
+         || state.bandeja.find(e => e.code === code);
+  if (!x) return;
+  if (esFuncionario()) return abrirDetalleFuncionario(x);
+  $("#det-code").textContent = x.code;
+  $("#det-titulo").textContent = x.permiso;
+  $("#det-cuerpo").innerHTML = `
+    <div><span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span></div>
+    ${lineaDeTiempo(x)}
+    <div class="sigue"><h3>Qué sigue</h3><p>${esc(QUE_SIGUE[x.estado]?.(x) ?? x.etapa)}</p></div>
+    <dl class="summary">
+      ${[["Lugar", x.lugar], ["Día del acto", fechaLarga(x.fecha)], ["Recibido el", fechaLarga(x.creado)],
+         ["Etapa actual", x.etapa]].map(([k, v]) =>
+        `<div class="r"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}
+      <div class="r"><dt>Huella del documento</dt><dd class="mono" style="font-size:.76rem">${esc(x.hash)}</dd></div>
+    </dl>
+    <div class="actions">
+      ${x.estado === "Subsanación"
+        ? `<button type="button" class="btn" id="det-cita">Agendar cita para subsanar</button>` : ""}
+      <button type="button" class="btn ghost" id="det-pdf">Descargar constancia</button>
+    </div>`;
+  $("#det-pdf").addEventListener("click", () => descargarConstancia(x));
+  $("#det-cita")?.addEventListener("click", () => {
+    $("#detalle").close();
+    ir("citas");
+    $("#c-motivo").value = "Subsanación de expediente";
+    $("#c-exp").value = `${x.code} — ${x.permiso}`;
+  });
+  $("#detalle").showModal();                 // modal nativo: atrapa el foco y Escape lo cierra
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-exp]"); if (b) abrirDetalle(b.dataset.exp);
+});
+$("#det-cerrar").addEventListener("click", () => $("#detalle").close());
+
+/* ---------- constancia en PDF, generada en el navegador ----------
+   Mismo diseño que la de la API (backend/constancia.py): PDF escrito a mano,
+   A4, Helvetica y Courier en WinAnsiEncoding (tildes y eñes). Mientras el
+   portal no esté conectado a la API no hay sello de la bitácora; en su lugar
+   va un código de verificación: el SHA-256 de los datos de la constancia. */
+const WIN_ANSI = { "€":0x80, "‚":0x82, "„":0x84, "…":0x85, "‘":0x91, "’":0x92,
+                   "“":0x93, "”":0x94, "•":0x95, "–":0x96, "—":0x97 };
+
+// Texto → cadena literal de PDF, un carácter por byte.
+function cadenaPDF(t){
+  const escapado = String(t).replace(/[\\()]/g, m => "\\" + m);
+  return Array.from(escapado, c => {
+    const n = c.codePointAt(0);
+    return String.fromCharCode(WIN_ANSI[c] ?? (n < 256 ? n : 0x3f));
+  }).join("");
+}
+
+function envolver(t, ancho){
+  const lineas = []; let actual = "";
+  for (const palabra of String(t).split(/\s+/).filter(Boolean)) {
+    if (actual && (actual + " " + palabra).length > ancho) { lineas.push(actual); actual = palabra; }
+    else actual = actual ? `${actual} ${palabra}` : palabra;
+  }
+  if (actual) lineas.push(actual);
+  return lineas.length ? lineas : ["—"];
+}
+
+function constanciaPDF(x, u, verificacion){
+  const A = 595, H = 842, M = 56, COL = M + 150;
+  const AZUL = "0.043 0.310 0.541", GRIS = "0.30 0.34 0.38";
+  const ops = []; let y;
+  const texto = (t, { f = "F1", tam = 10, en = M, color = "0 0 0" } = {}) =>
+    ops.push(`BT ${color} rg /${f} ${tam} Tf ${en} ${y.toFixed(1)} Td (${cadenaPDF(t)}) Tj ET`);
+  const seccion = t => {
+    y -= 10; texto(t.toUpperCase(), { f: "F2", tam: 9, color: AZUL }); y -= 6;
+    ops.push(`0.80 G 0.6 w ${M} ${y.toFixed(1)} m ${A - M} ${y.toFixed(1)} l S`); y -= 16;
+  };
+  const fila = (k, v, mono = false) => {
+    const tam = mono ? 8 : 10;                     // en Courier 8 una huella de 64 cabe en una línea
+    texto(k, { f: "F2", tam: 9.5, color: GRIS });
+    envolver(v, Math.floor((A - M - COL) / (tam * (mono ? 0.6 : 0.5)))).forEach((l, i) => {
+      if (i) y -= 13;
+      texto(l, { f: mono ? "F3" : "F1", tam, en: COL });
+    });
+    y -= 17;
+  };
+
+  // franja oficial, igual que en el portal
+  ops.push(`${AZUL} rg 0 ${H - 40} ${A} 40 re f`, `0.722 0.439 0.110 rg 0 ${H - 43} ${A} 3 re f`);
+  y = H - 26; texto("Municipio de Panamá · Dirección de Permisos y Cumplimiento", { f: "F2", color: "1 1 1" });
+  y = H - 87; texto("Constancia de solicitud", { f: "F2", tam: 20 });
+  y -= 22;    texto(x.code, { f: "F3", tam: 12, color: AZUL });
+  y -= 18;    texto(`Recibida el ${fechaLarga(x.creado)} · Estado: ${x.estado}`, { color: GRIS });
+  y -= 14;
+
+  seccion("Solicitud");
+  fila("Trámite", x.permiso);
+  fila("Titular", `${u.nombre} ${u.apellido} (${u.email})`);
+  if (x.resp) fila("Responsable", `${x.resp} · ${x.tel}`);
+  if (x.tipoActo) fila("Tipo de acto", x.tipoActo);
+  fila("Lugar", x.lugar);
+  fila("Fecha del acto", fechaLarga(x.fecha) + (x.hIni ? `, de ${x.hIni} a ${x.hFin}` : ""));
+  if (x.aforo) fila("Aforo", `${x.aforo.toLocaleString("es-PA")} personas`);
+  fila("Etapa actual", x.etapa);
+  if (x.motivo) fila("Motivo", x.motivo);
+
+  seccion("Documento adjunto");
+  fila("Huella SHA-256", x.hash, true);
+
+  seccion("Verificación");
+  if (x.sello) fila("Sellado", `${x.sello} UTC`);
+  fila("Código", verificacion, true);
+
+  y -= 8;
+  envolver("Esta constancia acredita que la solicitud fue recibida por la Ventanilla Única Municipal; " +
+           "no es el permiso. La huella del documento identifica el PDF entregado: cualquier cambio en " +
+           "el archivo produce otra huella. El código de verificación es el SHA-256 de los datos de esta " +
+           "constancia; la que emite la API lleva además el sello de la bitácora de auditoría.",
+           Math.floor((A - 2 * M) / 4.25)).forEach(l => { texto(l, { tam: 8.5, color: GRIS }); y -= 11.9; });
+
+  // catálogo, página, contenido, tres fuentes estándar, información, xref y trailer
+  const contenido = ops.join("\n");
+  const fuente = n => `<< /Type /Font /Subtype /Type1 /BaseFont /${n} /Encoding /WinAnsiEncoding >>`;
+  const objetos = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A} ${H}] /Contents 4 0 R ` +
+      "/Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >> >> >>",
+    `<< /Length ${contenido.length} >>\nstream\n${contenido}\nendstream`,
+    fuente("Helvetica"), fuente("Helvetica-Bold"), fuente("Courier"),
+    `<< /Title (${cadenaPDF("Constancia " + x.code)}) /Producer (Ventanilla Unica Municipal) >>`,
+  ];
+  let pdf = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
+  const posiciones = objetos.map((o, i) => { const p = pdf.length; pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; return p; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n` +
+         posiciones.map(p => `${String(p).padStart(10, "0")} 00000 n \n`).join("") +
+         `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R /Info ${objetos.length} 0 R >>\n` +
+         `startxref\n${xref}\n%%EOF\n`;
+  return Uint8Array.from(pdf, c => c.charCodeAt(0));
+}
+
+async function descargarConstancia(x){
+  const u = state.user;
+
+  // Con backend, la constancia la firma la API: lleva el sello de la bitácora.
+  if (MODO === "api"){
+    try {
+      const blob = await api(`/api/solicitudes/${encodeURIComponent(x.code)}/constancia`, { crudo:true });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement("a"), { href:url, download:`constancia-${x.code}.pdf` });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return toast(`Constancia de ${x.code} descargada.`);
+    } catch (err) {
+      toast("La API no pudo emitirla (" + err.message + "). Se genera en el navegador.");
+    }
+  }
+
+  let verificacion = "No disponible en este navegador";
+  try {           // crypto.subtle sólo existe en contextos seguros (https o localhost)
+    const datos = JSON.stringify([x.code, x.permiso, x.lugar, x.fecha, x.creado, x.hash, u.email]);
+    const huella = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(datos));
+    verificacion = Array.from(new Uint8Array(huella), b => b.toString(16).padStart(2, "0")).join("");
+  } catch {}
+  const url = URL.createObjectURL(new Blob([constanciaPDF(x, u, verificacion)], { type: "application/pdf" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: `constancia-${x.code}.pdf` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`Constancia de ${x.code} descargada.`);
+}
+$("#q-est").addEventListener("change", filtrarExpedientes);
+
+/* ============================================================
+   7-bis. BANDEJA DEL FUNCIONARIO
+
+   La otra cara del portal. El ciudadano ve sus expedientes; el revisor ve
+   los de todos y es el único que puede moverlos de estado. Los datos vienen
+   de GET /api/bandeja y las decisiones salen por PATCH /api/solicitudes/{código}.
+   ============================================================ */
+
+function tarjetaBandeja(x){
+  return `<article class="exp st-${estadoClase(x.estado)}">
+    <div style="min-width:0">
+      <div class="code">${esc(x.code)}</div>
+      <div class="name">${esc(x.permiso)}</div>
+      <div class="quien">Solicita: ${esc(x.solicitante || "—")}${x.resp ? ` · En sitio: ${esc(x.resp)}` : ""}</div>
+      <div class="meta"><i>${esc(x.lugar)}</i><i>${fechaLarga(x.fecha)}</i><i>${esc(x.etapa)}</i></div>
+    </div>
+    <div class="exp-der">
+      <span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span>
+      <button type="button" class="btn ver" data-exp="${esc(x.code)}" aria-label="Revisar ${esc(x.code)}">Revisar</button>
+    </div>
+  </article>`;
+}
+
+function conteoLocal(){
+  const c = { "Recibido":0, "En revisión":0, "Aprobado":0, "Subsanación":0, "Rechazado":0 };
+  state.expedientes.forEach(x => { if (x.estado in c) c[x.estado]++; });
+  return c;
+}
+
+async function cargarBandeja(){
+  if (!esFuncionario()) return;
+  const est = $("#b-est").value, corr = $("#b-corr").value, q = $("#b-q").value.trim();
+
+  if (MODO !== "api"){                       // demostración: se filtra en memoria
+    const texto = q.toLowerCase();
+    state.bandeja = state.expedientes.filter(x =>
+      (!est   || x.estado === est) &&
+      (!corr  || (x.lugar || "").includes(corr)) &&
+      (!texto || `${x.code} ${x.lugar} ${x.resp || ""}`.toLowerCase().includes(texto)));
+    const corrs = [...new Set(state.expedientes
+      .map(x => (x.lugar || "").split(", ").pop()).filter(Boolean))].sort();
+    return pintarBandeja(conteoLocal(), corrs);
+  }
+
+  const f = new URLSearchParams();
+  if (est)  f.set("estado", est);
+  if (corr) f.set("corregimiento", corr);
+  if (q)    f.set("q", q);
+  try {
+    const r = await api("/api/bandeja" + (f.toString() ? "?" + f : ""));
+    if (r.transiciones) TRANSICIONES = r.transiciones;      // manda la de la API
+    state.bandeja = (r.expedientes || []).map(expedienteDesdeAPI);
+    pintarBandeja(r.conteo || {}, r.corregimientos || []);
+  } catch (e) {
+    toast("No se pudo cargar la bandeja: " + e.message);
+  }
+}
+
+function pintarBandeja(conteo, corregimientos){
+  const n = e => conteo[e] || 0;
+  $("#b-k-rec").textContent = n("Recibido");
+  $("#b-k-rev").textContent = n("En revisión");
+  $("#b-k-sub").textContent = n("Subsanación");
+  $("#b-k-apr").textContent = n("Aprobado");
+  $("#b-k-tot").textContent = Object.values(conteo).reduce((a, b) => a + b, 0);
+
+  const sel = $("#b-corr"), elegido = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' +
+    corregimientos.map(c => `<option${c === elegido ? " selected" : ""}>${esc(c)}</option>`).join("");
+
+  $("#b-lista").innerHTML = state.bandeja.map(tarjetaBandeja).join("");
+  $("#b-vacio").hidden = state.bandeja.length > 0;
+}
+
+let tecleoBandeja;
+$("#b-q").addEventListener("input", () => {       // no una petición por tecla
+  clearTimeout(tecleoBandeja); tecleoBandeja = setTimeout(cargarBandeja, 280);
+});
+$("#b-est").addEventListener("change", cargarBandeja);
+$("#b-corr").addEventListener("change", cargarBandeja);
+$("#b-recargar").addEventListener("click", () => { cargarBandeja(); toast("Bandeja actualizada"); });
+document.addEventListener("click", e => {
+  const s = e.target.closest(".stat[data-bfiltro]"); if (!s) return;
+  $("#b-est").value = s.dataset.bfiltro;
+  cargarBandeja();
+});
+
+/* ---------- el expediente visto por quien lo resuelve ---------- */
+
+function abrirDetalleFuncionario(x){
+  $("#det-code").textContent = x.code;
+  $("#det-titulo").textContent = x.permiso;
+  $("#det-cuerpo").innerHTML = `
+    <div><span class="pill ${estadoClase(x.estado)}">${esc(x.estado)}</span></div>
+    <dl class="summary">
+      ${[["Solicitante", x.solicitante || "—"],
+         ["Responsable en sitio", x.resp ? `${x.resp} · ${x.tel || ""}` : "—"],
+         ["Lugar", x.lugar],
+         ["Día del acto", fechaLarga(x.fecha) + (x.hIni ? `, de ${x.hIni} a ${x.hFin}` : "")],
+         ["Aforo", x.aforo ? `${Number(x.aforo).toLocaleString("es-PA")} personas` : "—"],
+         ["Recibido el", fechaLarga(x.creado)],
+         ["Motivo", x.motivo || "—"],
+         ["Etapa actual", x.etapa]].map(([k, v]) =>
+        `<div class="r"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}
+      <div class="r"><dt>Huella del documento</dt>
+        <dd class="mono" style="font-size:.76rem">${esc(x.hash || "—")}</dd></div>
+    </dl>
+    <h3 style="margin-top:18px">Historial</h3>
+    <ol class="hist" id="det-hist"><li class="hm">Cargando…</li></ol>
+    <div class="resolver" id="det-resolver"></div>`;
+  $("#detalle").showModal();
+  pintarResolver(x);
+  pintarHistorial(x);
+}
+
+async function pintarHistorial(x){
+  let filas = x.hist || [];
+  if (MODO === "api"){
+    try { filas = await api(`/api/solicitudes/${encodeURIComponent(x.code)}/historial`); }
+    catch { filas = []; }
+  }
+  const caja = $("#det-hist"); if (!caja) return;
+  caja.innerHTML = filas.length
+    ? filas.map(f => `<li>
+        <span class="he">${esc(f.estado)}</span>
+        <div class="hm">${esc(String(f.en).replace("T", " "))} · ${esc(f.actor)}${
+          f.rol && f.rol !== "ciudadano" ? ` (${esc(f.rol)})` : ""}</div>
+        ${f.comentario ? `<div class="hc">${esc(f.comentario)}</div>` : ""}</li>`).join("")
+    : `<li class="hm">Sin movimientos registrados.</li>`;
+}
+
+function pintarResolver(x){
+  const caja = $("#det-resolver"); if (!caja) return;
+  const posibles = TRANSICIONES[x.estado] || [];
+
+  if (!posibles.length){
+    caja.innerHTML = `<p class="small muted">Expediente cerrado en <b>${esc(x.estado)}</b>.
+      Una resolución no se deshace: si el solicitante no está de acuerdo, corresponde un
+      recurso, no un cambio de estado.</p>`;
+    return;
+  }
+
+  caja.innerHTML = `
+    <h3>Resolver</h3>
+    <div class="field" style="margin-top:8px">
+      <label for="det-coment">Comentario para el solicitante</label>
+      <textarea id="det-coment" maxlength="600"
+        placeholder="Obligatorio para subsanación y rechazo: aquí se explica qué falta o por qué no procede."></textarea>
+    </div>
+    <div id="det-err" class="notice crit" role="alert" hidden><svg class="ic ni" aria-hidden="true"><use href="#i-alerta"/></svg><span></span></div>
+    <div class="actions">${posibles.map(e =>
+      `<button type="button" class="btn ${CLASE_BOTON[e] || ""}" data-resolver="${esc(e)}">${
+        esc(e === "En revisión" ? "Pasar a revisión" : e)}</button>`).join("")}</div>`;
+
+  caja.addEventListener("click", ev => {
+    const b = ev.target.closest("[data-resolver]");
+    if (b) resolver(x, b.dataset.resolver, b);
+  });
+}
+
+async function resolver(x, estado, boton){
+  const comentario = ($("#det-coment")?.value || "").trim();
+  if (EXIGEN_COMENTARIO.includes(estado) && !comentario)
+    return showErr($("#det-err"), `Para «${estado}» hay que explicarle el motivo al solicitante.`, "det-coment");
+  showErr($("#det-err"), null);
+
+  if (MODO === "api"){
+    const texto = boton.textContent;
+    $$("#det-resolver [data-resolver]").forEach(b => b.disabled = true);
+    boton.textContent = "Guardando…";
+    try {
+      const e = await api(`/api/solicitudes/${encodeURIComponent(x.code)}`,
+                          { metodo:"PATCH", cuerpo:{ estado, comentario: comentario || null } });
+      Object.assign(x, expedienteDesdeAPI(e));
+    } catch (err) {
+      $$("#det-resolver [data-resolver]").forEach(b => b.disabled = false);
+      boton.textContent = texto;
+      return showErr($("#det-err"), err.message);
+    }
+  } else {
+    x.estado = estado;
+    x.etapa  = (estado === "Subsanación" && comentario) ? comentario : ETAPAS[estado];
+    (x.hist = x.hist || []).push({
+      estado, etapa:x.etapa, en:new Date().toISOString().slice(0, 19),
+      actor:state.user.email, rol:state.user.rol, comentario: comentario || null });
+  }
+
+  $("#detalle").close();
+  toast(`${x.code} → ${estado}`);
+  cargarBandeja();
+}
+
+/* ============================================================
+   8. ASISTENTE — PASO 1: TIPO DE PERMISO
+   ============================================================ */
+
+function pintarCatalogo(){
+  ALL_PERMS = CATALOGO.flatMap(c => c.items.map(i => ({ ...i, cat:c.cat })));
+  $("#fact-tramites").textContent = ALL_PERMS.length;
+  $("#cats").innerHTML = CATALOGO.map((c, i) =>
+    `<button type="button" class="cat" data-cat="${i}" aria-pressed="false">
+       <span class="cn">${esc(c.cat)}</span>
+       <span class="cc">${c.items.length} trámite${c.items.length > 1 ? "s" : ""}</span>
+     </button>`).join("");
+}
+pintarCatalogo();
+
+/* El catálogo deja de estar quemado en el archivo: lo sirve GET /api/permisos,
+   que lo lee de la tabla `permisos`. */
+async function cargarCatalogoDesdeAPI(){
+  const lista = await api("/api/permisos");
+  if (!Array.isArray(lista) || !lista.length) return;
+  CATALOGO = catalogoDesdeAPI(lista);
+  pintarCatalogo();
+}
+
+$("#cats").addEventListener("click", e => {
+  const b = e.target.closest(".cat"); if (!b) return;
+  $$(".cat").forEach(x => x.setAttribute("aria-pressed", x === b));
+  state.sel.cat = Number(b.dataset.cat);
+  state.sel.perm = null;
+  $("#perm-wrap").hidden = false;
+  $("#req-wrap").hidden = true;
+  $("#s1-next").disabled = true;
+  $("#perms").innerHTML = CATALOGO[state.sel.cat].items.map((p, i) =>
+    `<button type="button" class="opt" data-perm="${esc(p.id)}" aria-pressed="false"
+             aria-label="${esc(p.n)}" aria-describedby="od-${i} dd-${i}">
+       <span class="radio"></span>
+       <span><span class="on">${esc(p.n)}</span><span class="od" id="od-${i}">${p.req.length} documentos requeridos</span></span>
+       <span class="days" id="dd-${i}">${p.d} días háb.</span>
+     </button>`).join("");
+});
+
+$("#perms").addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  $$(".opt", $("#perms")).forEach(x => x.setAttribute("aria-pressed", x === b));
+  state.sel.perm = ALL_PERMS.find(p => p.id === b.dataset.perm);
+  $("#s1-next").disabled = false;
+  const html = requisitosHTML(state.sel.perm);
+  $("#req-wrap").innerHTML = html; $("#req-wrap").hidden = false;
+});
+
+function requisitosHTML(p){
+  return `<div class="req-box">
+    <span class="eyebrow">Requisitos · ${esc(p.n)}</span>
+    <ul>${p.req.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    <p class="small muted" style="margin-top:10px">Reúne estos documentos en <b>un solo archivo PDF</b>.
+      Plazo estimado de resolución: <b>${p.d} días hábiles</b>.</p>
+  </div>`;
+}
+
+const sinTildes = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+$("#q-tramite").addEventListener("input", e => {
+  const q = sinTildes(e.target.value.trim());
+  const res = $("#q-res"), vacio = $("#q-vacio");
+  if (q.length < 2){ res.hidden = vacio.hidden = true; $("#q-cuenta").textContent = ""; return; }
+  const palabras = q.split(/\s+/);
+  const hallados = ALL_PERMS
+    .filter(p => { const t = sinTildes(`${p.n} ${p.cat}`); return palabras.every(w => t.includes(w)); })
+    .slice(0, 8);
+  res.innerHTML = hallados.map((p, i) =>
+    `<button type="button" class="opt" data-buscar="${esc(p.id)}" aria-label="${esc(p.n)}" aria-describedby="qd-${i}">
+       <span class="radio"></span>
+       <span><span class="on">${esc(p.n)}</span><span class="od" id="qd-${i}">${esc(p.cat)} · ${p.d} días háb.</span></span>
+     </button>`).join("");
+  res.hidden = !hallados.length;
+  vacio.hidden = hallados.length > 0;
+  $("#q-cuenta").textContent = hallados.length ? `${hallados.length} trámites encontrados` : "Sin resultados";
+});
+
+$("#q-res").addEventListener("click", e => {
+  const b = e.target.closest("[data-buscar]"); if (!b) return;
+  const p = ALL_PERMS.find(x => x.id === b.dataset.buscar);
+  $(`.cat[data-cat="${CATALOGO.findIndex(c => c.cat === p.cat)}"]`).click();   // pinta su categoría
+  $(`#perms [data-perm="${CSS.escape(p.id)}"]`).click();                      // y marca el trámite
+  $("#q-tramite").value = ""; $("#q-res").hidden = true; $("#q-cuenta").textContent = "";
+  $("#req-wrap").scrollIntoView({ behavior:"smooth", block:"nearest" });
+});
+
+$("#s1-next").addEventListener("click", () => {
+  const p = state.sel.perm;
+  $("#s2-sub").textContent = p.n;
+  if (p.aforo){
+    $("#f-aforo").min = p.aforo[0]; $("#f-aforo").max = p.aforo[1];
+    $("#aforo-hint").textContent = `Este permiso aplica de ${p.aforo[0]} a ${p.aforo[1].toLocaleString("es-PA")} personas.`;
+  } else {
+    $("#f-aforo").min = 1; $("#f-aforo").max = 60000;
+    $("#aforo-hint").textContent = "Número de personas esperadas.";
+  }
+  paso(2);
+});
+
+/* ============================================================
+   9. ASISTENTE — PASO 2: DATOS DEL ACTO
+   ============================================================ */
+
+$("#f-corregimiento").insertAdjacentHTML("beforeend",
+  CORREGIMIENTOS.map(c => `<option>${esc(c)}</option>`).join(""));
+$("#f-tipoacto").insertAdjacentHTML("beforeend",
+  TIPOS_ACTO.map(t => `<option>${esc(t)}</option>`).join(""));
+$("#f-fecha").min = hoyISO(15);
+$("#f-motivo").addEventListener("input", e => {
+  if (e.target.value.length > 600) e.target.value = e.target.value.slice(0, 600);
+  $("#motivo-n").textContent = e.target.value.length;
+});
+
+$('[data-step="2"]').addEventListener("submit", e => {
+  e.preventDefault();
+  const err = $("#s2-err"), V = id => $("#" + id).value.trim();
+  const d = {
+    corregimiento:V("f-corregimiento"), tipoActo:V("f-tipoacto"), lugar:V("f-lugar"),
+    fecha:V("f-fecha"), hIni:V("f-hini"), hFin:V("f-hfin"),
+    aforo:Number(V("f-aforo")), resp:V("f-resp"), tel:V("f-tel"), motivo:V("f-motivo")
+  };
+  if (!d.corregimiento) return showErr(err, "Selecciona el corregimiento donde se realizará el acto.", "f-corregimiento");
+  if (!d.tipoActo)      return showErr(err, "Selecciona el tipo de acto.", "f-tipoacto");
+  if (d.lugar.length < 5) return showErr(err, "Describe el lugar exacto con un poco más de detalle.", "f-lugar");
+  if (!d.fecha)         return showErr(err, "Indica el día del acto.", "f-fecha");
+  if (d.fecha < hoyISO(15))
+    return showErr(err, "La fecha debe tener al menos 15 días hábiles de antelación.", "f-fecha");
+  if (!d.hIni || !d.hFin) return showErr(err, "Indica la hora de inicio y la de cierre.", d.hIni ? "f-hfin" : "f-hini");
+  if (d.hFin <= d.hIni && d.hFin > "06:00")
+    return showErr(err, "La hora de cierre debe ser posterior a la de inicio.", "f-hfin");
+  const p = state.sel.perm;
+  if (!d.aforo || d.aforo < 1) return showErr(err, "Indica el aforo estimado.", "f-aforo");
+  if (p.aforo && (d.aforo < p.aforo[0] || d.aforo > p.aforo[1]))
+    return showErr(err, `Para «${p.n}» el aforo debe estar entre ${p.aforo[0]} y ${p.aforo[1].toLocaleString("es-PA")} personas. Cambia el tipo de permiso o corrige el aforo.`, "f-aforo");
+  if (!d.resp)  return showErr(err, "Indica quién será el responsable en sitio.", "f-resp");
+  if (!/[0-9]{7,}/.test(d.tel.replace(/[^0-9]/g,"")))
+    return showErr(err, "Escribe un teléfono de contacto válido, por ejemplo +507 6000-0000.", "f-tel");
+  if (d.motivo.length < 20) return showErr(err, "El motivo debe tener al menos 20 caracteres.", "f-motivo");
+
+  showErr(err, null);
+  state.sel.datos = d;
+  $("#req-wrap-3").innerHTML = requisitosHTML(state.sel.perm);
+  paso(3);
+});
+
+/* ---------- Relleno de demostración ----------
+   Para enseñar el flujo completo sin teclear diez campos delante de la clase.
+   No se salta ninguna validación: rellena el formulario y lo somete a las
+   mismas comprobaciones que si lo hubiera escrito una persona. */
+
+const EJEMPLOS = [
+  { corregimiento:"Bella Vista", tipoActo:"Feria o exposición comercial",
+    lugar:"Ave. Balboa, frente al parque Urracá", aforo:250,
+    motivo:"Feria de emprendedores del corregimiento, con veinte toldos, tarima pequeña y actividades para las familias del área." },
+  { corregimiento:"San Francisco", tipoActo:"Concierto o presentación musical",
+    lugar:"Parque Omar, área de la concha acústica", aforo:1200,
+    motivo:"Concierto al aire libre de una agrupación local, con sonido profesional y personal de seguridad contratado para el evento." },
+  { corregimiento:"Santa Ana", tipoActo:"Actividad cultural o artística",
+    lugar:"Plaza Herrera, Casco Antiguo", aforo:400,
+    motivo:"Muestra de artesanía y danza folclórica organizada junto con la junta comunal del corregimiento." }
+];
+let nEjemplo = 0;
+
+$("#s2-demo").addEventListener("click", () => {
+  const p = state.sel.perm;
+  const e = EJEMPLOS[nEjemplo++ % EJEMPLOS.length];
+  // El aforo se ajusta al rango que admite el permiso elegido: si no, el
+  // propio formulario rechazaría el ejemplo.
+  const aforo = p?.aforo ? Math.min(Math.max(e.aforo, p.aforo[0]), p.aforo[1]) : e.aforo;
+
+  $("#f-corregimiento").value = e.corregimiento;
+  $("#f-tipoacto").value      = e.tipoActo;
+  $("#f-lugar").value         = e.lugar;
+  $("#f-fecha").value         = hoyISO(40);        // holgado sobre los 15 días exigidos
+  $("#f-hini").value          = "09:00";
+  $("#f-hfin").value          = "17:00";
+  $("#f-aforo").value         = aforo;
+  $("#f-resp").value          = `${state.user.nombre} ${state.user.apellido}`;
+  $("#f-tel").value           = "+507 6000-0000";
+  $("#f-motivo").value        = e.motivo;
+  $("#motivo-n").textContent  = e.motivo.length;
+
+  showErr($("#s2-err"), null);
+  $$('[aria-invalid="true"]', $('[data-step="2"]')).forEach(limpiarCampo);
+  toast("Formulario rellenado. Revísalo y pulsa Continuar.");
+});
+
+/* Un PDF mínimo pero válido, escrito aquí mismo: cabecera %PDF-, catálogo,
+   una página y su tabla de referencias. Pasa por la cadena de verificación
+   completa, igual que un archivo traído del disco. */
+function pdfDeEjemplo(){
+  const objetos = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>"
+  ];
+  let pdf = "%PDF-1.4\n";
+  const posiciones = objetos.map((o, i) => {
+    const donde = pdf.length;
+    pdf += `${i + 1} 0 obj\n${o}\nendobj\n`;
+    return donde;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n` +
+         posiciones.map(d => `${String(d).padStart(10, "0")} 00000 n \n`).join("") +
+         `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return new File([Uint8Array.from(pdf, c => c.charCodeAt(0))],
+                  "solicitud-demostracion.pdf", { type:"application/pdf" });
+}
+
+$("#s3-demo").addEventListener("click", () => verificar(pdfDeEjemplo()));
+
+/* ============================================================
+   10. ASISTENTE — PASO 3: DOCUMENTO PDF
+       Cadena de verificación: formato → tamaño → antivirus
+       (ClamAV) → huella SHA-256 → sellado en bitácora.
+   ============================================================ */
+
+const drop = $("#drop"), fileIn = $("#file-in");
+drop.addEventListener("click", () => fileIn.click());
+["dragenter","dragover"].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => {
+  const f = e.dataTransfer?.files?.[0]; if (f) verificar(f);
+});
+fileIn.addEventListener("change", e => { const f = e.target.files[0]; if (f) verificar(f); });
+
+const NUM_CHK = { fmt:"1", size:"2", av:"3", hash:"4", log:"5" };
+function marcar(c, estado, valor){
+  const el = $(`.chk[data-c="${c}"]`);
+  el.dataset.s = estado;
+  el.querySelector(".ic").textContent =
+    estado === "ok" ? "✓" : estado === "bad" ? "✕" : estado === "run" ? "◠" : NUM_CHK[c];
+  if (valor !== undefined) el.querySelector(".cv").textContent = valor;
+}
+const espera = ms => new Promise(r => setTimeout(r, ms));
+
+async function sha256(buf){
+  const h = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+async function verificar(file){
+  try { await verificarPasos(file); }
+  catch {
+    // El archivo cambió o desapareció del disco mientras se leía (carpeta
+    // sincronizada, memoria USB retirada…): se rechaza en vez de quedar en «Verificando».
+    const c = $('.chk[data-s="run"]')?.dataset.c || "fmt";
+    marcar(c, "bad", "No se pudo leer");
+    $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
+    showErr($("#s3-err"), "No pudimos leer el archivo. Vuelve a seleccionarlo.");
+    fileIn.value = "";
+  }
+}
+
+async function verificarPasos(file){
+  showErr($("#s3-err"), null);
+  state.sel.doc = null;
+  $("#s3-next").disabled = true;
+  $("#scan").hidden = false;
+  $("#scan-name").textContent = file.name;
+  $("#scan-pill").className = "pill info"; $("#scan-pill").textContent = "Verificando";
+  ["fmt","size","av","hash","log"].forEach(c => marcar(c, "wait", ""));
+
+  const fallar = (c, msg, corto) => {
+    marcar(c, "bad", corto);
+    $("#scan-pill").className = "pill crit"; $("#scan-pill").textContent = "Rechazado";
+    showErr($("#s3-err"), msg);
+    fileIn.value = "";
+  };
+
+  // 1 · Formato real del archivo: extensión, tipo MIME y firma binaria %PDF-
+  marcar("fmt","run"); await espera(340);
+  const cab = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const firma = String.fromCharCode(...cab);
+  const extOK = /\.pdf$/i.test(file.name);
+  if (!extOK || firma !== "%PDF-")
+    return fallar("fmt", "El archivo no es un PDF válido. Sube un documento con extensión .pdf.", "No es un PDF");
+  marcar("fmt","ok","%PDF-");
+
+  // 2 · Tamaño
+  marcar("size","run"); await espera(240);
+  const mb = file.size / 1048576;
+  if (mb > MAX_MB)
+    return fallar("size", `El archivo pesa ${mb.toFixed(1)} MB y el límite es ${MAX_MB} MB. Comprime el PDF e inténtalo de nuevo.`, "Supera 10 MB");
+  if (file.size === 0) return fallar("size", "El archivo está vacío.", "Vacío");
+  marcar("size","ok", `${mb.toFixed(2)} MB`);
+
+  // 3, 4 y 5 · Antivirus, huella y sellado.
+  //   · modo api : POST /api/documentos/verificar entrega el PDF al demonio
+  //     clamd (INSTREAM), guarda el archivo sólo si sale limpio y sella la
+  //     bitácora. El SHA-256 que devuelve es el que viaja en la solicitud.
+  //   · modo demo: ClamAV se simula; la huella sí se calcula de verdad.
+  let hash, sello;
+
+  if (MODO === "api"){
+    marcar("av","run");
+    let r;
+    try {
+      r = await api("/api/documentos/verificar", { metodo:"POST", archivo:file });
+    } catch (err) {
+      const corto = err.status === 422 ? "Bloqueado"
+                  : err.status === 503 ? "Antivirus caído"
+                  : err.status === 0   ? "Sin conexión" : "Rechazado";
+      return fallar("av", err.message, corto);
+    }
+    marcar("av","ok","Sin amenazas");
+
+    marcar("hash","run"); await espera(120);
+    hash = r.sha256;
+    marcar("hash","ok", hash.slice(0, 24) + "…");
+
+    marcar("log","run"); await espera(120);
+    sello = String(r.sellado || "").replace("T", " ");
+    marcar("log","ok", sello + " UTC");
+    state.sel.doc = { nombre:r.nombre || file.name, bytes:r.bytes ?? file.size, mb:mb.toFixed(2),
+                      hash, sello, bitacora:r.bitacora };
+  } else {
+    marcar("av","run"); await espera(1100);
+    const sospechoso = /eicar|virus|malware|test-?infected/i.test(file.name);
+    if (sospechoso)
+      return fallar("av", "ClamAV detectó una amenaza en el archivo (Eicar-Test-Signature). El documento fue puesto en cuarentena y no se adjuntó al expediente.", "Bloqueado");
+    marcar("av","ok","Sin amenazas");
+
+    marcar("hash","run");
+    hash = await sha256(await file.arrayBuffer());
+    await espera(260);
+    marcar("hash","ok", hash.slice(0, 24) + "…");
+
+    marcar("log","run"); await espera(300);
+    sello = new Date().toISOString().replace("T"," ").slice(0, 19);
+    marcar("log","ok", sello + " UTC");
+    state.sel.doc = { nombre:file.name, bytes:file.size, mb:mb.toFixed(2), hash, sello };
+  }
+
+  $("#scan-pill").className = "pill ok"; $("#scan-pill").textContent = "Verificado";
+  $("#s3-next").disabled = false;
+}
+
+$("#s3-next").addEventListener("click", () => {
+  if (!state.sel.doc) return showErr($("#s3-err"), "Adjunta y verifica un PDF antes de continuar.");
+  const p = state.sel.perm, d = state.sel.datos, doc = state.sel.doc;
+  $("#sum").innerHTML = [
+    ["Permiso solicitado", p.n],
+    ["Categoría", p.cat],
+    ["Solicitante", `${state.user.nombre} ${state.user.apellido} · ${state.user.org}`],
+    ["Corregimiento", d.corregimiento],
+    ["Lugar del acto", d.lugar],
+    ["Tipo de acto", d.tipoActo],
+    ["Día y horario", `${fechaLarga(d.fecha)} · ${d.hIni} a ${d.hFin}`],
+    ["Aforo estimado", `${d.aforo.toLocaleString("es-PA")} personas`],
+    ["Responsable en sitio", `${d.resp} · ${d.tel}`],
+    ["Motivo", d.motivo],
+    ["Documento adjunto", `${doc.nombre} (${doc.mb} MB) · verificado`],
+    ["Huella SHA-256", `<span class="mono" style="font-size:.76rem">${doc.hash}</span>`],
+    ["Plazo estimado", `${p.d} días hábiles`]
+  ].map(([k,v]) => `<div class="r"><dt>${esc(k)}</dt><dd>${k === "Huella SHA-256" ? v : esc(v)}</dd></div>`).join("");
+  paso(4);
+});
+
+$("#s4-ok").addEventListener("change", e => { $("#s4-send").disabled = !e.target.checked; });
+
+$("#s4-send").addEventListener("click", async () => {
+  const p = state.sel.perm, d = state.sel.datos, doc = state.sel.doc;
+  const boton = $("#s4-send");
+  let code;
+
+  if (MODO === "api"){
+    showErr($("#s4-err"), null);
+    boton.disabled = true; boton.textContent = "Enviando…";
+    try {
+      const e = await api("/api/solicitudes", { metodo:"POST", cuerpo:{
+        permiso_id: p.id, corregimiento: d.corregimiento, tipo_acto: d.tipoActo,
+        lugar: d.lugar, fecha: d.fecha, hora_inicio: d.hIni, hora_fin: d.hFin,
+        aforo: d.aforo, responsable: d.resp, telefono: d.tel, motivo: d.motivo,
+        documento_sha256: doc.hash, declaracion_jurada: true
+      }});
+      code = e.codigo;
+      state.expedientes.unshift(expedienteDesdeAPI(e));
+    } catch (err) {
+      boton.disabled = false;
+      return showErr($("#s4-err"), err.message);
+    } finally {
+      boton.textContent = "Enviar solicitud";
+    }
+  } else {
+    code = nuevoExpediente();
+    state.expedientes.unshift({
+      code, permiso:p.n, lugar:`${d.lugar}, ${d.corregimiento}`, fecha:d.fecha,
+      estado:"Recibido", etapa:"En cola de asignación · Dirección de Permisos",
+      creado:hoyISO(), hash:doc.hash, sello:doc.sello,
+      tipoActo:d.tipoActo, hIni:d.hIni, hFin:d.hFin, aforo:d.aforo, resp:d.resp, tel:d.tel, motivo:d.motivo
+    });
+  }
+
+  $("#receipt").innerHTML = [
+    ["Número de expediente", `<span class="mono" style="font-weight:600">${esc(code)}</span>`],
+    ["Permiso", esc(p.n)],
+    ["Recibido el", fechaLarga(hoyISO())],
+    ["Estado", "Recibido"],
+    ["Documento sellado", `<span class="mono" style="font-size:.76rem">${esc(doc.hash)}</span>`],
+    ["Resolución estimada", `${p.d} días hábiles`]
+  ].map(([k,v]) => `<div class="r"><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  pintarTodo();
+  paso(5);
+  $("#s4-send").disabled = false;
+  toast(MODO === "api" ? `Expediente ${code} guardado en la base` : `Expediente ${code} generado`);
+});
+
+$("#new-again").addEventListener("click", reiniciarAsistente);
+
+function reiniciarAsistente(){
+  state.sel = { cat:null, perm:null, datos:null, doc:null };
+  $("#q-tramite").value = ""; $("#q-res").hidden = $("#q-vacio").hidden = true;
+  $$(".cat").forEach(x => x.setAttribute("aria-pressed","false"));
+  $("#perm-wrap").hidden = true; $("#req-wrap").hidden = true;
+  $("#s1-next").disabled = true; $("#s3-next").disabled = true; $("#s4-send").disabled = true;
+  $("#s4-ok").checked = false;
+  $("#scan").hidden = true; fileIn.value = "";
+  $('[data-step="2"]').reset();
+  $("#f-resp").value = `${state.user.nombre} ${state.user.apellido}`;
+  $("#f-hini").value = "18:00"; $("#f-hfin").value = "23:00";
+  $("#motivo-n").textContent = "0";
+  [ "#s2-err","#s3-err" ].forEach(s => showErr($(s), null));
+  paso(1);
+}
+
+function paso(n){
+  state.step = n;
+  for (let i = 1; i <= 5; i++) $(`[data-step="${i}"]`).hidden = i !== n;
+  $(`[data-step="${n}"]`).style.display = "flex";
+  $$("#stepper .s").forEach((s, i) => {
+    s.dataset.state = n > 4 ? "done" : (i + 1 === n ? "on" : i + 1 < n ? "done" : "");
+    if (i + 1 < n || n > 4) s.querySelector(".num").textContent = "✓";
+    else s.querySelector(".num").textContent = String(i + 1);
+  });
+  $("#stepper").hidden = n === 5;
+  const nombres = ["Tipo de permiso", "Datos del acto", "Documentos", "Revisión y envío"];
+  const actual = Math.min(n, 4);
+  $("#paso-de").textContent = `Paso ${actual} de 4 · ${nombres[actual - 1]}`;
+  $("#progreso").setAttribute("aria-valuenow", String(actual));
+  $("#progreso span").style.width = `${actual * 25}%`;
+  $("#paso-de").hidden = $("#progreso").hidden = n === 5;
+  $(`[data-step="${n}"]`).scrollIntoView({ behavior:"smooth", block:"start" });
+}
+$$("[data-back]").forEach(b => b.addEventListener("click", () => paso(Number(b.dataset.back))));
+
+/* ============================================================
+   11. CITAS
+   ============================================================ */
+
+const HORAS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+               "13:00","13:30","14:00","14:30","15:00","15:30"];
+let horaSel = null;
+
+// Los próximos n días hábiles a partir de mañana (ni sábado ni domingo).
+function diasHabiles(n){
+  const dias = [];
+  for (const d = new Date(); dias.length < n; ){
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() % 6) dias.push(new Date(d));            // ni domingo (0) ni sábado (6)
+  }
+  return dias;
+}
+
+// Se propone el tercer día hábil: «hoy + 3» caía en fin de semana de miércoles a viernes.
+$("#c-fecha").min = hoyISO(1);
+$("#c-fecha").value = aISO(diasHabiles(3)[2]);
+
+let consultaSlots = 0;        // para descartar respuestas que llegan tarde
+
+async function pintarSlots(){
+  const f = $("#c-fecha").value || aISO(diasHabiles(3)[2]);
+  const sede = $("#c-sede").value;
+  horaSel = null;
+
+  const pintar = ocupadaEn => {
+    $("#slots").innerHTML = HORAS.map((h, i) =>
+      `<button type="button" class="slot" data-h="${h}" aria-pressed="false" ${ocupadaEn(h, i) ? "disabled" : ""}>${h}</button>`
+    ).join("");
+  };
+  // Ocupación determinista a partir de la fecha, para que el ejemplo sea estable.
+  const semilla = f.split("-").reduce((a,b) => a + Number(b), 0);
+  const ejemplo = (h, i) => (semilla + i * 5) % 7 < 2 ||
+    state.citas.some(c => c.fecha === f && c.hora === h);
+
+  if (MODO !== "api" || !TOKEN) return pintar(ejemplo);
+
+  // Con backend, la ocupación es la real de esa sede y ese día. Sin sede
+  // elegida no hay nada que consultar: los turnos dependen de la sede.
+  if (!sede){
+    $("#slots").innerHTML = `<p class="small muted" style="margin:0">Elige la sede para ver los horarios libres.</p>`;
+    return;
+  }
+
+  const ficha = ++consultaSlots;
+  $("#slots").setAttribute("aria-busy", "true");
+  let ocupadas = null;
+  try {
+    const r = await api(`/api/citas/ocupadas?sede=${encodeURIComponent(sede)}&fecha=${encodeURIComponent(f)}`, { ms: 8000 });
+    ocupadas = Array.isArray(r?.ocupadas) ? r.ocupadas : [];
+  } catch { ocupadas = null; }      // sin respuesta: se cae al ejemplo, nunca a una rejilla vacía
+  if (ficha !== consultaSlots) return;             // hubo otra consulta después: ésta ya no manda
+  $("#slots").removeAttribute("aria-busy");
+  pintar(ocupadas ? h => ocupadas.includes(h) : ejemplo);
+}
+const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+function pintarAtajos(){
+  const elegida = $("#c-fecha").value;
+  $("#c-atajos").innerHTML = diasHabiles(5).map(d => {
+    const iso = aISO(d);
+    return `<button type="button" class="chip" data-fecha="${iso}" aria-pressed="${iso === elegida}"
+              aria-label="${DIAS[d.getDay()]} ${fechaLarga(iso)}">${DIAS[d.getDay()]} ${d.getDate()}</button>`;
+  }).join("");
+}
+$("#c-atajos").addEventListener("click", e => {
+  const b = e.target.closest("[data-fecha]"); if (!b) return;
+  $("#c-fecha").value = b.dataset.fecha;
+  pintarSlots(); pintarAtajos();
+});
+$("#c-fecha").addEventListener("change", () => { pintarSlots(); pintarAtajos(); });
+$("#c-sede").addEventListener("change", pintarSlots);   // los turnos son por sede
+$("#slots").addEventListener("click", e => {
+  const b = e.target.closest(".slot"); if (!b || b.disabled) return;
+  $$(".slot").forEach(x => x.setAttribute("aria-pressed", x === b));
+  horaSel = b.dataset.h;
+});
+pintarSlots();
+pintarAtajos();
+
+$("#cita-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("#c-err");
+  const sede = $("#c-sede").value, motivo = $("#c-motivo").value, fecha = $("#c-fecha").value;
+  if (!sede)   return showErr(err, "Selecciona la sede a la que asistirás.", "c-sede");
+  if (!motivo) return showErr(err, "Indica el motivo de la cita.", "c-motivo");
+  if (!fecha)  return showErr(err, "Selecciona la fecha de la cita.", "c-fecha");
+  const dia = new Date(fecha + "T12:00:00").getDay();
+  if (dia === 0 || dia === 6)
+    return showErr(err, "La atención presencial es de lunes a viernes. Elige otro día.", "c-fecha");
+  if (!horaSel) return showErr(err, "Elige uno de los horarios disponibles.");
+
+  showErr(err, null);
+  const expediente = $("#c-exp").value;
+  let turno;
+
+  if (MODO === "api"){
+    try {
+      const c = await api("/api/citas", { metodo:"POST", cuerpo:{
+        sede, motivo, fecha, hora: horaSel, expediente: expediente || null
+      }});
+      turno = c.turno;
+      state.citas.unshift({ turno, sede:c.sede, motivo:c.motivo, fecha:c.fecha, hora:c.hora, exp:c.expediente || "" });
+    } catch (e2) {
+      pintarSlots();                 // si el turno se ocupó mientras tanto, la rejilla se corrige sola
+      return showErr(err, e2.message);
+    }
+  } else {
+    turno = "CT-" + String(1000 + state.citas.length * 3 + (new Date(fecha).getDate())).slice(0,4);
+    state.citas.unshift({ turno, sede, motivo, fecha, hora:horaSel, exp:expediente });
+  }
+  $("#c-sede").value = ""; $("#c-motivo").value = ""; $("#c-exp").value = "";
+  pintarCitas(); pintarSlots();      // primero se limpia el formulario: la rejilla depende de la sede
+  toast(`Cita ${turno} reservada`);
+});
+
+function pintarCitas(){
+  $("#citas-list").innerHTML = state.citas.map(c =>
+    `<article class="exp st-info">
+      <div style="min-width:0">
+        <div class="code">Turno ${esc(c.turno)}${c.exp ? " · " + esc(c.exp.split(" — ")[0]) : ""}</div>
+        <div class="name">${esc(c.motivo)}</div>
+        <div class="meta"><i>${esc(c.sede)}</i><i>${fechaLarga(c.fecha)}</i><i>${esc(c.hora)}</i></div>
+      </div>
+      <span class="pill info">Confirmada</span>
+    </article>`).join("");
+  $("#no-citas").hidden = state.citas.length > 0;
+}
+
+/* ============================================================
+   12. CONTACTO
+   ============================================================ */
+
+$("#ct-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("#ct-err"), ok = $("#ct-ok");
+  ok.hidden = true;
+  const V = id => $("#" + id).value.trim();
+  if (!V("ct-nombre")) return showErr(err, "Escribe tu nombre completo.", "ct-nombre");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(V("ct-email")))
+    return showErr(err, "El correo electrónico no tiene un formato válido.", "ct-email");
+  if (!V("ct-tema")) return showErr(err, "Selecciona el tema de tu mensaje.", "ct-tema");
+  if (V("ct-msg").length < 15) return showErr(err, "Cuéntanos un poco más; el mensaje es muy corto.", "ct-msg");
+  showErr(err, null);
+  let ticket;
+  if (MODO === "api"){
+    try {
+      const r = await api("/api/contacto", { metodo:"POST", cuerpo:{
+        nombre: V("ct-nombre"), email: V("ct-email"), tema: V("ct-tema"),
+        mensaje: V("ct-msg"), expediente: V("ct-exp") || null
+      }});
+      ticket = r.ticket;
+    } catch (e2) { return showErr(err, e2.message); }
+  } else {
+    ticket = "MSG-" + Math.floor(100000 + Math.random() * 899999);
+  }
+  ok.hidden = false;
+  ok.lastElementChild.innerHTML =
+    `<b>Mensaje enviado.</b> Tu número de seguimiento es <span class="mono">${ticket}</span>. Respondemos en un plazo de 3 días hábiles.`;
+  $("#ct-msg").value = ""; $("#ct-exp").value = ""; $("#ct-tema").value = "";
+});
+
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  const txt = $("#" + b.dataset.copy).textContent.trim();
+  try { await navigator.clipboard.writeText(txt); toast("Copiado: " + txt); }
+  catch { const r = document.createRange(); r.selectNode($("#" + b.dataset.copy));
+          getSelection().removeAllRanges(); getSelection().addRange(r);
+          toast("Selecciona y copia con el teclado"); }
+});
+
+/* ============================================================
+   13. ARRANQUE
+   ============================================================ */
+mostrarPanel("login");
+
+/* Deja constancia visible de con qué está hablando el portal. */
+let detalleSalud = "";
+let salud = null;             // lo último que contestó GET /salud
+
+function pintarModo(detalle){
+  if (detalle !== undefined) detalleSalud = detalle;
+  pintarOps();
+  const caja = $("#pane-login .demo-note"); if (!caja) return;
+  const funcionario = state.rolPuerta === "funcionario";
+  const cuenta = funcionario
+    ? `<b>revisor@mupa.gob.pa</b> · <b>revisor1234</b>`
+    : `<b>demo@mupa.gob.pa</b> · <b>demo1234</b>`;
+
+  if (MODO === "api"){
+    caja.innerHTML =
+      `<b>Conectado a la base de datos</b> — API en <span class="mono">${esc(API_BASE)}</span>` +
+      (detalleSalud ? ` · ${esc(detalleSalud)}` : "") +
+      `<br><span class="small muted">Cuenta de prueba: ${cuenta}.` +
+      (funcionario
+        ? ` Los funcionarios no se registran: se promueven con <span class="mono">migrar.py --rol revisor</span>.`
+        : ` Si prefieres la tuya, créala en «Crear cuenta».`) +
+      `</span>`;
+  } else {
+    caja.innerHTML = `<b>Modo demostración</b> — sin conexión con la API (${esc(API_BASE)}).` +
+      `<br><span class="small muted">Cuenta de prueba: ${cuenta}. Nada se guarda al recargar.</span>`;
+  }
+
+  // El mismo aviso en «Crear cuenta». Sin esto, quien va directo a registrarse
+  // nunca se entera de que su cuenta sólo existe en este navegador.
+  const enRegistro = $("#su-modo");
+  if (enRegistro){
+    enRegistro.innerHTML = MODO === "api"
+      ? `<b>Conectado a la base de datos</b><br><span class="small muted">Tu cuenta quedará guardada: podrás volver a entrar con ella cuando quieras.</span>`
+      : `<b>Ojo: no hay base de datos conectada</b><br><span class="small muted">La cuenta que crees aquí vive sólo en esta pestaña y <b>se pierde al recargar</b>. Para que se guarde, levanta la API (${esc(API_BASE)}) y vuelve a abrir el portal.</span>`;
+  }
+}
+
+/* La barra de abajo decía «Antivirus documental activo» siempre, hubiera o no
+   backend. Ahora dice lo que de verdad contestó /salud: un indicador que
+   miente es peor que no tenerlo. */
+function pintarOps(){
+  const barra = $("#opsbar"); if (!barra) return;
+  const linea = (clase, texto) => `<span><i class="${clase}"></i>${esc(texto)}</span>`;
+
+  if (MODO !== "api"){
+    barra.innerHTML = linea("dot-crit", "Modo demostración · nada se guarda") +
+                      linea("dot-warn", "Sin conexión con la API");
+    return;
+  }
+  const av = salud?.antivirus?.arriba, base = salud?.base_de_datos?.arriba;
+  barra.innerHTML =
+    linea(av   ? "dot-ok" : "dot-crit", av   ? "Antivirus documental activo" : "Antivirus sin responder") +
+    linea(base ? "dot-ok" : "dot-crit", base ? "Base de datos en línea"      : "Base de datos sin responder");
+}
+
+async function arranque(){
+  for (const direccion of DIRECCIONES_API){
+    API_BASE = direccion;
+    try { salud = await api("/salud", { ms: 4000 }); MODO = "api"; break; }
+    catch { salud = null; }                 // esa dirección no contesta: se prueba la siguiente
+  }
+
+  if (MODO !== "api"){ pintarModo(); return; }
+
+  try { localStorage.setItem("vum-api", API_BASE); } catch {}   // la que sirvió, recordada
+  const bd = salud?.base_de_datos?.arriba ? "base en línea" : "base no disponible";
+  const av = salud?.antivirus?.arriba ? "ClamAV activo" : "ClamAV caído";
+  pintarModo(`${bd} · ${av}`);
+  try { await cargarCatalogoDesdeAPI(); } catch {}
+
+  // Sesión recordada: si el token sigue vivo, el portal se abre directamente.
+  const s = sesionGuardada();
+  if (s?.token){
+    TOKEN = s.token;
+    try {
+      await cargarDatosDelUsuario();          // si el token caducó, esto falla y se olvida la sesión
+      state.user = cuentaDesdeAPI(s.usuario);
+      entrar(state.user);
+    } catch { olvidarSesion(); }
+  }
+}
+arranque();
+</script>
 </body>
 </html>

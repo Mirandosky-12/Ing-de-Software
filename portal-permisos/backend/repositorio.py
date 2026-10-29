@@ -12,9 +12,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -26,11 +26,43 @@ from tablas import (
 MUNICIPIO = os.getenv("MUNICIPIO", "panama")
 SESION_HORAS = float(os.getenv("SESION_HORAS", "8"))
 ETAPA_INICIAL = "En cola de asignación · Dirección de Permisos"
+
+# La etapa que se le muestra al solicitante en cada estado. En Subsanación la
+# reemplaza el comentario del revisor: ahí lo útil es saber QUÉ falta.
+ETAPAS = {
+    "Recibido":    ETAPA_INICIAL,
+    "En revisión": "Revisión técnica · Dirección de Permisos",
+    "Subsanación": "Pendiente de subsanación por el solicitante",
+    "Aprobado":    "Permiso emitido · descargable en ventanilla",
+    "Rechazado":   "Resolución negativa notificada al solicitante",
+}
+
+# Por dónde puede avanzar un expediente. Aprobado y Rechazado son finales:
+# una resolución no se deshace, se recurre. Esto no es cosmética de la
+# interfaz, lo impone la API, que es quien escribe en la base.
+TRANSICIONES = {
+    "Recibido":    ("En revisión", "Rechazado"),
+    "En revisión": ("Aprobado", "Subsanación", "Rechazado"),
+    "Subsanación": ("En revisión", "Rechazado"),
+    "Aprobado":    (),
+    "Rechazado":   (),
+}
+
+# Un «no» o un «le falta algo» sin explicación no es una resolución.
+EXIGEN_COMENTARIO = ("Subsanación", "Rechazado")
 _CERO = "0" * 64
 
 
 class Duplicado(Exception):
     """Ya existe una cuenta con ese correo."""
+
+
+class TransicionInvalida(Exception):
+    """Ese expediente no puede pasar a ese estado desde donde está."""
+
+    def __init__(self, desde: str, hacia: str):
+        self.desde, self.hacia = desde, hacia
+        super().__init__(f"Un expediente «{desde}» no puede pasar a «{hacia}».")
 
 
 class TurnoOcupado(Exception):
@@ -239,6 +271,65 @@ def sello_de(s: Session, codigo: str) -> Bitacora | None:
                      .order_by(Bitacora.n).limit(1)).first()
 
 
+def expedientes_todos(s: Session, estado: str | None = None,
+                      corregimiento: str | None = None,
+                      texto: str | None = None) -> list[Expediente]:
+    """La bandeja del funcionario: los expedientes de todos los solicitantes.
+    Sólo la llaman las rutas que ya comprobaron el rol."""
+    consulta = select(Expediente).order_by(Expediente.id.desc())
+    if estado:
+        consulta = consulta.where(Expediente.estado == estado)
+    if corregimiento:
+        consulta = consulta.where(Expediente.corregimiento == corregimiento)
+    if texto:
+        patron = f"%{texto.lower()}%"
+        consulta = consulta.where(or_(
+            func.lower(Expediente.codigo).like(patron),
+            func.lower(Expediente.lugar).like(patron),
+            func.lower(Expediente.responsable).like(patron),
+        ))
+    return list(s.scalars(consulta))
+
+
+def expediente_por_codigo(s: Session, codigo: str) -> Expediente | None:
+    """Sin filtrar por solicitante: es para el funcionario que revisa."""
+    return s.scalars(select(Expediente).where(Expediente.codigo == codigo)).first()
+
+
+def corregimientos_con_expedientes(s: Session) -> list[str]:
+    return sorted(c for c in s.scalars(select(Expediente.corregimiento).distinct()) if c)
+
+
+def cambiar_estado(s: Session, expediente: Expediente, funcionario: Cuenta,
+                   estado: str, comentario: str | None = None) -> Expediente:
+    """Mueve el expediente y deja la huella de quién lo movió. El historial es
+    de sólo anexado: la decisión anterior no se borra, se encadena."""
+    if estado not in TRANSICIONES.get(expediente.estado, ()):
+        raise TransicionInvalida(expediente.estado, estado)
+
+    comentario = (comentario or "").strip() or None
+    etapa = comentario if (estado == "Subsanación" and comentario) else ETAPAS[estado]
+    expediente.estado = estado
+    expediente.etapa = etapa[:120]
+    s.add(Historial(expediente_id=expediente.id, estado=estado, etapa=expediente.etapa,
+                    actor_id=funcionario.id, comentario=comentario, en=_ahora()))
+    s.flush()
+    return expediente
+
+
+def historial_a_dicts(s: Session, expediente: Expediente) -> list[dict]:
+    """El historial con el correo y el rol de quien hizo cada movimiento."""
+    filas = s.execute(
+        select(Historial, Cuenta.email, Cuenta.rol)
+        .join(Cuenta, Cuenta.id == Historial.actor_id)
+        .where(Historial.expediente_id == expediente.id)
+        .order_by(Historial.id)
+    )
+    return [{"estado": h.estado, "etapa": h.etapa, "comentario": h.comentario,
+             "en": h.en.isoformat(timespec="seconds"), "actor": correo, "rol": rol}
+            for h, correo, rol in filas]
+
+
 def historial_de(s: Session, expediente: Expediente) -> list[Historial]:
     return list(s.scalars(select(Historial).where(Historial.expediente_id == expediente.id)
                           .order_by(Historial.id)))
@@ -286,6 +377,26 @@ def reservar_cita(s: Session, cuenta: Cuenta, d: dict) -> Cita:
     cita.turno = f"CT-{cita.id + 1000:04d}"
     s.flush()
     return cita
+
+
+def citas_de(s: Session, cuenta: Cuenta, desde: date | None = None) -> list[Cita]:
+    """Las citas del propio solicitante, de la más próxima a la más lejana.
+    Con `desde` quedan fuera las que ya pasaron: es lo que el portal muestra
+    al entrar. Las de otro solicitante no se devuelven nunca."""
+    consulta = select(Cita).where(Cita.solicitante_id == cuenta.id)
+    if desde:
+        consulta = consulta.where(Cita.fecha >= desde)
+    return list(s.scalars(consulta.order_by(Cita.fecha, Cita.hora)))
+
+
+def horas_ocupadas(s: Session, sede: str, fecha: date) -> list[str]:
+    """Las horas ya reservadas en esa sede ese día, de todos los solicitantes.
+    Es lo que sostiene la restricción uq_citas_turno (sede, fecha, hora): la
+    base sigue siendo la que decide, esto sólo evita que el portal ofrezca un
+    turno que ya no está."""
+    return list(s.scalars(
+        select(Cita.hora).where(Cita.sede == sede, Cita.fecha == fecha).order_by(Cita.hora)
+    ))
 
 
 def cita_a_dict(c: Cita) -> dict:
