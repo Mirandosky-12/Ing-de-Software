@@ -1,23 +1,3 @@
-# Levanta todo el sistema:
-#   portal       → el portal del ciudadano en nginx (puerto 5173)
-#   bd           → PostgreSQL 17 (sólo en la red interna, sin puerto al exterior)
-#   migraciones  → crea tablas, triggers y permisos con el rol dueño, y termina
-#   api          → la API con el rol mupa_app (puerto 8000)
-#   clamav       → antivirus documental (puerto 3310)
-#   prometheus   → recolecta las métricas de la API (puerto 9090)
-#   grafana      → los tableros (puerto 3001, usuario admin / admin)
-#
-# Lo normal es levantarlo desde la raíz del repositorio con ./levantar.sh,
-# que crea las claves si faltan. A mano, desde esta carpeta:
-#   python generar_secretos.py        # una sola vez: crea secretos/
-#   docker compose up -d --build
-#
-# La primera vez ClamAV tarda ~2 minutos en descargar su base de firmas.
-# Compruébalo con:  docker compose logs -f clamav
-#
-# Base de pruebas para pytest -m postgres (en memoria, se borra al pararla):
-#   docker compose --profile pruebas up -d bd-pruebas
-
 name: mupa                       # mismo proyecto se levante desde aquí o desde la raíz
 
 x-endurecido: &endurecido
@@ -94,7 +74,7 @@ services:
       CLAVE_CIFRADO_FILE: /run/secrets/clave_cifrado
       CLAMAV_HOST: clamav
       MUNICIPIO: panama
-      CORS_ORIGENES: http://localhost:${PUERTO_PORTAL:-5173}
+      CORS_ORIGENES: http://localhost:${PUERTO_PORTAL:-5173},http://localhost:${PUERTO_PANEL:-3000}
     secrets: [bd_url_app, clave_cifrado]
     volumes:
       - expedientes:/datos/expedientes
@@ -110,8 +90,7 @@ services:
   clamav:
     image: clamav/clamav:stable
     container_name: mupa-clamav
-    ports:
-      - "${PUERTO_CLAMAV:-3310}:3310"
+    # Sin "ports": sólo accesible por la API dentro de la red interna "app".
     volumes:
       - firmas:/var/lib/clamav        # persiste las firmas entre reinicios
     environment:
@@ -150,11 +129,11 @@ services:
     volumes:
       - tableros:/var/lib/grafana
       - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
-      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/mupa.json:ro
+      - ./grafana-dashboard.json:/etc/grafana/dashboards/mupa.json:ro
       - ./grafana-provider.yml:/etc/grafana/provisioning/dashboards/mupa.yml:ro
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-mupa_admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Define GRAFANA_PASSWORD en .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
     networks: [app]
 

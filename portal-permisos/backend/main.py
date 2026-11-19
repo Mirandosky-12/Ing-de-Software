@@ -14,7 +14,7 @@ Rutas:
     GET    /api/solicitudes/{codigo}/constancia   constancia en PDF
     POST   /api/citas                      reservar turno
     POST   /api/contacto                   mensaje de contacto
-    GET    /api/bitacora/verificar         integridad de la auditoría
+    GET    /api/bitacora/verificar         integridad de la auditoría (solo funcionarios)
     GET    /salud                          health check
     GET    /metrics                        métricas para Prometheus → Grafana
 
@@ -28,7 +28,7 @@ import os
 import secrets
 import time
 from contextlib import asynccontextmanager
-from datetime import date
+from datetime import date, timedelta
 from typing import Literal
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
@@ -52,6 +52,35 @@ from tablas import Cuenta
 
 MUNICIPIO = repositorio.MUNICIPIO                  # etiqueta multi-municipio
 ORIGENES = os.getenv("CORS_ORIGENES", "http://localhost:5173,http://localhost:3000").split(",")
+
+# Feriados nacionales fijos de Panamá (mes, día)
+FERIADOS_FIJOS_PA = {
+    (1, 1),   # Año Nuevo
+    (1, 9),   # Día de los Mártires
+    (5, 1),   # Día del Trabajador
+    (11, 3),  # Separación de Panamá de Colombia
+    (11, 4),  # Día de los Símbolos Patrios
+    (11, 5),  # Consolidación de la Separación en Colón
+    (11, 10), # Primer Grito de Independencia
+    (11, 28), # Independencia de Panamá de España
+    (12, 8),  # Día de las Madres
+    (12, 20), # Día de Duelo Nacional
+    (12, 25), # Navidad
+}
+
+
+def dias_habiles_entre(inicio: date, fin: date) -> int:
+    """Cuenta días hábiles entre `inicio` (exclusivo) y `fin` (inclusivo),
+    omitiendo sábados, domingos y feriados nacionales fijos de Panamá."""
+    if fin <= inicio:
+        return 0
+    actual = inicio + timedelta(days=1)
+    habiles = 0
+    while actual <= fin:
+        if actual.weekday() < 5 and (actual.month, actual.day) not in FERIADOS_FIJOS_PA:
+            habiles += 1
+        actual += timedelta(days=1)
+    return habiles
 
 
 @asynccontextmanager
@@ -276,7 +305,11 @@ def verificar_documento(
     Es una ruta síncrona a propósito: FastAPI la corre en un hilo aparte, así
     el escaneo y las consultas a la base no frenan a las demás peticiones.
     """
-    contenido = archivo.file.read()
+    # Limita la lectura en RAM antes de pasar el archivo al antivirus
+    contenido = archivo.file.read(antivirus.MAX_BYTES + 1)
+    if len(contenido) > antivirus.MAX_BYTES:
+        raise HTTPException(413, "El archivo supera el límite máximo de 10 MB.")
+
     original = archivo.filename or "documento.pdf"
 
     with metricas.cronometrar(metricas.duracion_escaneo):
@@ -336,7 +369,7 @@ def crear_solicitud(
 
     if (date.today() - sol.fecha).days > 0:
         raise HTTPException(400, "La fecha del acto ya pasó.")
-    if (sol.fecha - date.today()).days < 15:
+    if dias_habiles_entre(date.today(), sol.fecha) < 15:
         raise HTTPException(400, "La fecha debe tener al menos 15 días hábiles de antelación.")
 
     if permiso.aforo_min is not None and not (permiso.aforo_min <= sol.aforo <= permiso.aforo_max):
@@ -516,6 +549,9 @@ def contacto(m: MensajeContacto, s: Session = Depends(bd.sesion)) -> dict:
 # ------------------------------------------------------------------ auditoría
 
 @app.get("/api/bitacora/verificar")
-def verificar_bitacora(s: Session = Depends(bd.sesion)) -> dict:
+def verificar_bitacora(
+    _funcionario: Cuenta = Depends(funcionario_actual),
+    s: Session = Depends(bd.sesion),
+) -> dict:
     """Recorre la cadena de hashes y reporta la primera fila alterada."""
     return repositorio.verificar_bitacora(s)
