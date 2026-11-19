@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 import seguridad
 from tablas import (
-    ESTADOS, Bitacora, Cita, Cuenta, Documento, Expediente, Historial, Permiso, Sesion,
+    ESTADOS, Bitacora, Cita, Contacto, Cuenta, Documento, Expediente, Historial, Permiso, Sesion,
 )
 
 MUNICIPIO = os.getenv("MUNICIPIO", "panama")
@@ -404,4 +404,40 @@ def cita_a_dict(c: Cita) -> dict:
         "turno": c.turno, "solicitante": c.solicitante.email, "municipio": c.municipio,
         "sede": c.sede, "motivo": c.motivo, "fecha": c.fecha.isoformat(),
         "hora": c.hora, "expediente": c.expediente,
+    }
+
+# ------------------------------------------------------------------ contacto
+
+def guardar_contacto(s: Session, ticket: str, d: dict) -> Contacto:
+    c = Contacto(
+        ticket=ticket,
+        municipio=MUNICIPIO,
+        nombre=d["nombre"],
+        email=d["email"].lower(),
+        tema=d["tema"],
+        mensaje=d["mensaje"],
+        expediente=d.get("expediente"),
+        estado="Abierto",
+        creado_en=_ahora(),
+    )
+    s.add(c)
+    s.flush()
+    return c
+
+
+def contactos_todos(s: Session) -> list[Contacto]:
+    return list(s.scalars(select(Contacto).order_by(Contacto.id.desc())))
+
+
+def contacto_a_dict(c: Contacto) -> dict:
+    return {
+        "ticket": c.ticket,
+        "municipio": c.municipio,
+        "nombre": c.nombre,
+        "email": c.email,
+        "tema": c.tema,
+        "mensaje": c.mensaje,
+        "expediente": c.expediente,
+        "estado": c.estado,
+        "creado": c.creado_en.isoformat(timespec="seconds"),
     }

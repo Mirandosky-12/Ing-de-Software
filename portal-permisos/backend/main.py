@@ -541,9 +541,19 @@ def horarios_ocupados(
 @app.post("/api/contacto", status_code=201)
 def contacto(m: MensajeContacto, s: Session = Depends(bd.sesion)) -> dict:
     ticket = f"MSG-{secrets.randbelow(900_000) + 100_000}"
+    repositorio.guardar_contacto(s, ticket, m.model_dump())
     repositorio.registrar(s, "contacto.recibido", m.email.lower(), ticket=ticket, tema=m.tema)
     s.commit()
     return {"ticket": ticket, "mensaje": "Respondemos en un plazo de 3 días hábiles."}
+
+
+@app.get("/api/contacto")
+def listar_contactos(
+    _funcionario: Cuenta = Depends(funcionario_actual),
+    s: Session = Depends(bd.sesion),
+) -> list[dict]:
+    """Bandeja de mensajes de contacto para funcionarios."""
+    return [repositorio.contacto_a_dict(c) for c in repositorio.contactos_todos(s)]
 
 
 # ------------------------------------------------------------------ auditoría

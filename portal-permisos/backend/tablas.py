@@ -195,3 +195,19 @@ class Bitacora(Base):
     datos: Mapped[str] = mapped_column(Text)             # JSON canónico
     previo: Mapped[str] = mapped_column(String(64))
     hash: Mapped[str] = mapped_column(String(64), unique=True)
+
+class Contacto(Base):
+    """Mensajes enviados desde el formulario de contacto del portal."""
+
+    __tablename__ = "contactos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ticket: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    municipio: Mapped[str] = mapped_column(String(40))
+    nombre: Mapped[str] = mapped_column(String(120))
+    email: Mapped[str] = mapped_column(String(254))
+    tema: Mapped[str] = mapped_column(String(80))
+    mensaje: Mapped[str] = mapped_column(Text)
+    expediente: Mapped[str | None] = mapped_column(String(200))
+    estado: Mapped[str] = mapped_column(String(15), default="Abierto")
+    creado_en: Mapped[datetime] = mapped_column(MomentoUTC())
